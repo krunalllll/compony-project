@@ -295,7 +295,7 @@ const MegaMenu = ({ isOpen, onClose }) => {
                 borderBottom: '1px solid var(--color-border)',
                 backgroundColor: 'var(--color-bg)',
               }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '0.15em', fontSize: '1.25rem', color: '#fff' }}>HAPPY STORE</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '0.15em', fontSize: '1.25rem', color: 'var(--color-primary)' }}>HAPPY STORE</span>
                 <button onClick={onClose} style={{ padding: '0.5rem', color: 'var(--color-secondary)', display: 'flex', alignItems: 'center' }}>
                   <X size={20} />
                 </button>
@@ -304,7 +304,7 @@ const MegaMenu = ({ isOpen, onClose }) => {
               {/* Membership Promo Card */}
               <div style={{
                 padding: '1.25rem 1.5rem',
-                backgroundColor: '#121216',
+                backgroundColor: 'var(--color-surface)',
                 borderBottom: '1px solid var(--color-border)',
               }}>
                 {isAuthenticated && user ? (
@@ -316,7 +316,7 @@ const MegaMenu = ({ isOpen, onClose }) => {
                         style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--color-border)' }}
                       />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 800, fontSize: '0.85rem', letterSpacing: '0.05em', color: '#fff' }}>{user.name.toUpperCase()}</div>
+                        <div style={{ fontWeight: 800, fontSize: '0.85rem', letterSpacing: '0.05em', color: 'var(--color-primary)' }}>{user.name.toUpperCase()}</div>
                         <span className="membership-text" style={{ fontSize: '0.62rem', letterSpacing: '0.05em', display: 'inline-block', marginTop: '0.1rem' }}>APEX VIP MEMBER</span>
                       </div>
                     </div>
@@ -340,7 +340,7 @@ const MegaMenu = ({ isOpen, onClose }) => {
                         <a href="#appstore" style={{ color: 'var(--color-secondary)' }}><AppStoreIcon /></a>
                       </div>
                     </div>
-                    <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.02em' }}>YOU ARE NOT A MEMBER</h3>
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>YOU ARE NOT A MEMBER</h3>
                     <p style={{ fontSize: '0.7rem', color: 'var(--color-secondary)', marginTop: '0.25rem', fontWeight: 500, lineHeight: 1.4 }}>
                       Join the apex collective to redeem cashback credits and VIP pricing privileges.
                     </p>

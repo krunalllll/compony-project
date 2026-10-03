@@ -177,7 +177,7 @@ const Signup = () => {
 
         <div style={{ textAlign: 'center', marginTop: '2.5rem', fontSize: '0.8rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
           ALREADY A MEMBER?{' '}
-          <Link to="/login" style={{ color: '#FFF', fontWeight: 800, textDecoration: 'underline' }}>
+          <Link to="/login" style={{ color: 'var(--color-primary)', fontWeight: 800, textDecoration: 'underline' }}>
             LOG IN HERE
           </Link>
         </div>

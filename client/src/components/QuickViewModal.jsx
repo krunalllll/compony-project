@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, ShoppingCart, Star, Heart } from 'lucide-react';
+import { X, ShoppingCart, Star, Heart, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { addToCartAsync } from '../redux/cartSlice';
 import { addToWishlistAsync, removeFromWishlistAsync } from '../redux/wishlistSlice';
+import { useToast } from '../context/ToastContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const getImageUrl = (image) => {
   if (!image) return '';
@@ -16,8 +18,9 @@ const getImageUrl = (image) => {
 const QuickViewModal = ({ productId, isOpen, onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { addToast } = useToast();
+  const { formatPrice } = useCurrency();
 
-  const { isAuthenticated } = useSelector((state) => state.auth);
   const wishlistProducts = useSelector((state) => state.wishlist.products);
 
   const [product, setProduct] = useState(null);
@@ -73,73 +76,90 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const discountPrice = product?.discount > 0 
-    ? (product.price * (1 - product.discount / 100)).toFixed(2)
+    ? (product.price * (1 - product.discount / 100))
     : null;
 
   const handleAddToCart = async () => {
-    if (!isAuthenticated) {
-      onClose();
-      navigate('/login');
-      return;
-    }
     setAddingToCart(true);
+    const size = selectedSize || 'Free Size';
+    const color = selectedColor || 'Default';
+
     await dispatch(addToCartAsync({
       productId: product._id,
       quantity,
-      size: selectedSize || 'Free Size',
-      color: selectedColor || 'Default',
+      size,
+      color,
+      product,
     }));
+
     setAddingToCart(false);
     onClose();
+
+    addToast({
+      title: 'Added to Bag',
+      message: `${product.name} (${size})`,
+      type: 'cart',
+      image: activeImage,
+      actionText: 'View Bag',
+      onAction: () => {
+        window.dispatchEvent(new CustomEvent('open-cart-drawer'));
+      },
+    });
   };
 
   const handleBuyNow = async () => {
-    if (!isAuthenticated) {
-      onClose();
-      navigate('/login');
-      return;
-    }
+    const size = selectedSize || 'Free Size';
+    const color = selectedColor || 'Default';
+
     await dispatch(addToCartAsync({
       productId: product._id,
       quantity,
-      size: selectedSize || 'Free Size',
-      color: selectedColor || 'Default',
+      size,
+      color,
+      product,
     }));
     onClose();
     navigate('/checkout?checkout=true');
   };
 
   const handleWishlistToggle = () => {
-    if (!isAuthenticated) {
-      onClose();
-      navigate('/login');
-      return;
-    }
     if (isWishlisted) {
       dispatch(removeFromWishlistAsync(product._id));
+      addToast({
+        title: 'Removed from Wishlist',
+        message: `${product.name} removed`,
+        type: 'info',
+      });
     } else {
-      dispatch(addToWishlistAsync(product._id));
+      dispatch(addToWishlistAsync(product));
+      addToast({
+        title: 'Saved to Wishlist',
+        message: `${product.name} saved`,
+        type: 'wishlist',
+      });
     }
   };
 
   return (
     <AnimatePresence>
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2000,
-        padding: '1.5rem',
-      }}>
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2500,
+          padding: '1.5rem',
+        }}
+      >
         {/* Overlay */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.7 }}
+          animate={{ opacity: 0.75 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
           style={{
@@ -162,7 +182,7 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
           style={{
             position: 'relative',
             width: '100%',
-            maxWidth: '900px',
+            maxWidth: '850px',
             backgroundColor: 'var(--color-bg-alt)',
             border: '1px solid var(--color-border)',
             boxShadow: 'var(--shadow-premium)',
@@ -184,23 +204,26 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
               color: 'var(--color-secondary)',
               zIndex: 15,
               padding: '0.25rem',
+              cursor: 'pointer',
               transition: 'color 0.2s',
             }}
-            onMouseEnter={(e) => e.target.style.color = '#fff'}
-            onMouseLeave={(e) => e.target.style.color = 'var(--color-secondary)'}
+            onMouseEnter={(e) => (e.target.style.color = 'var(--color-primary)')}
+            onMouseLeave={(e) => (e.target.style.color = 'var(--color-secondary)')}
           >
             <X size={20} />
           </button>
 
           {loading ? (
             <div style={{ padding: '5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '350px' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-secondary)', letterSpacing: '0.1em' }}>FETCHING PRODUCT SPECIFICS...</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-secondary)', letterSpacing: '0.1em' }}>
+                FETCHING GARMENT SPECIFICS...
+              </span>
             </div>
           ) : product ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', width: '100%' }}>
               
               {/* Left Side: Images Gallery */}
-              <div style={{ flex: '1 1 400px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderRight: '1px solid var(--color-border)' }}>
+              <div style={{ flex: '1 1 380px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderRight: '1px solid var(--color-border)' }}>
                 <div style={{ width: '100%', aspectRatio: '4/5', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
                   <img src={activeImage} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   {product.discount > 0 && (
@@ -227,6 +250,8 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
                             borderColor: activeImage === url ? 'var(--color-primary)' : 'var(--color-border)',
                             opacity: activeImage === url ? 1 : 0.5,
                             transition: '0.2s',
+                            cursor: 'pointer',
+                            padding: 0,
                           }}
                         >
                           <img src={url} alt="thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -238,7 +263,7 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
               </div>
 
               {/* Right Side: Product Details */}
-              <div style={{ flex: '1 1 400px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ flex: '1 1 380px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div>
                   <span style={{ fontSize: '0.65rem', color: 'var(--color-accent)', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
                     {product.brand} // {product.category}
@@ -246,15 +271,12 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
                   <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em', marginTop: '0.25rem', lineHeight: 1.2 }}>
                     {product.name}
                   </h2>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--color-secondary)', fontWeight: 700, marginTop: '0.25rem' }}>
-                    SKU: {product._id.slice(-8).toUpperCase()}
-                  </div>
 
                   {/* Ratings */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem' }}>
                     <div style={{ display: 'flex', color: 'var(--color-gold)' }}>
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={11} fill={i < Math.round(product.ratings || 4.5) ? 'var(--color-gold)' : 'none'} stroke={i < Math.round(product.ratings || 4.5) ? 'none' : 'var(--color-gold)'} />
+                        <Star key={i} size={11} fill={i < Math.round(product.ratings || 4.5) ? 'var(--color-gold)' : 'none'} stroke="var(--color-gold)" />
                       ))}
                     </div>
                     <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)' }}>
@@ -267,11 +289,15 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', padding: '0.75rem 0' }}>
                   {discountPrice ? (
                     <>
-                      <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-accent)' }}>${discountPrice}</span>
-                      <span style={{ fontSize: '1.1rem', color: 'var(--color-secondary)', textDecoration: 'line-through' }}>${product.price}</span>
+                      <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-accent)' }}>
+                        {formatPrice(discountPrice)}
+                      </span>
+                      <span style={{ fontSize: '1.1rem', color: 'var(--color-secondary)', textDecoration: 'line-through' }}>
+                        {formatPrice(product.price)}
+                      </span>
                     </>
                   ) : (
-                    <span style={{ fontSize: '1.3rem', fontWeight: 800 }}>${product.price}</span>
+                    <span style={{ fontSize: '1.4rem', fontWeight: 800 }}>{formatPrice(product.price)}</span>
                   )}
                 </div>
 
@@ -284,7 +310,7 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
                 {product.colors && product.colors.length > 0 && (
                   <div>
                     <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>Color</span>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
                       {product.colors.map((color) => (
                         <button
                           key={color}
@@ -294,9 +320,11 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
                             fontSize: '0.68rem',
                             fontWeight: 700,
                             border: '1px solid',
-                            borderColor: selectedColor === color ? '#fff' : 'var(--color-border)',
+                            borderColor: selectedColor === color ? 'var(--color-primary)' : 'var(--color-border)',
                             backgroundColor: selectedColor === color ? 'var(--color-surface-hover)' : 'var(--color-bg-alt)',
+                            color: 'var(--color-primary)',
                             textTransform: 'uppercase',
+                            cursor: 'pointer',
                           }}
                         >
                           {color}
@@ -310,22 +338,24 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
                 {product.sizes && product.sizes.length > 0 && (
                   <div>
                     <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>Size</span>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
                       {product.sizes.map((size) => (
                         <button
                           key={size}
                           onClick={() => setSelectedSize(size)}
                           style={{
-                            width: '36px',
-                            height: '36px',
-                            fontSize: '0.7rem',
+                            width: '38px',
+                            height: '38px',
+                            fontSize: '0.72rem',
                             fontWeight: 800,
                             border: '1px solid',
-                            borderColor: selectedSize === size ? '#fff' : 'var(--color-border)',
+                            borderColor: selectedSize === size ? 'var(--color-primary)' : 'var(--color-border)',
                             backgroundColor: selectedSize === size ? 'var(--color-surface-hover)' : 'var(--color-bg-alt)',
+                            color: 'var(--color-primary)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
+                            cursor: 'pointer',
                           }}
                         >
                           {size}
@@ -335,14 +365,14 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
                   </div>
                 )}
 
-                {/* Quantity & Stock */}
+                {/* Quantity */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                   <div>
                     <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em', display: 'block', marginBottom: '0.25rem' }}>Qty</span>
                     <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)' }}>
-                      <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}>-</button>
+                      <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>-</button>
                       <span style={{ width: '25px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{quantity}</span>
-                      <button onClick={() => setQuantity(q => q + 1)} style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}>+</button>
+                      <button onClick={() => setQuantity((q) => q + 1)} style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>+</button>
                     </div>
                   </div>
 
@@ -361,16 +391,16 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
                       onClick={handleAddToCart}
                       disabled={product.stock <= 0 || addingToCart}
                       className="btn-primary"
-                      style={{ flex: 1, padding: '0.75rem 0', fontSize: '0.75rem' }}
+                      style={{ flex: 1, padding: '0.85rem 0', fontSize: '0.75rem' }}
                     >
-                      <ShoppingCart size={13} />
+                      <ShoppingCart size={14} />
                       {product.stock <= 0 ? 'OUT OF STOCK' : addingToCart ? 'ADDING...' : 'ADD TO BAG'}
                     </button>
 
                     <button
                       onClick={handleWishlistToggle}
                       className="btn-secondary"
-                      style={{ padding: '0.75rem', color: isWishlisted ? 'var(--color-accent)' : '#fff', borderColor: isWishlisted ? 'var(--color-accent)' : 'var(--color-border)' }}
+                      style={{ padding: '0.85rem', color: isWishlisted ? 'var(--color-accent)' : 'var(--color-primary)', borderColor: isWishlisted ? 'var(--color-accent)' : 'var(--color-border)', cursor: 'pointer' }}
                     >
                       <Heart size={16} fill={isWishlisted ? 'var(--color-accent)' : 'none'} />
                     </button>
@@ -380,7 +410,7 @@ const QuickViewModal = ({ productId, isOpen, onClose }) => {
                     <button
                       onClick={handleBuyNow}
                       className="btn-accent"
-                      style={{ width: '100%', padding: '0.75rem 0', fontSize: '0.75rem' }}
+                      style={{ width: '100%', padding: '0.85rem 0', fontSize: '0.75rem' }}
                     >
                       BUY IT NOW
                     </button>

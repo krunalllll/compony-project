@@ -696,7 +696,7 @@ const AdminDashboard = () => {
                                   style={{
                                     padding: '0.35rem 0.75rem',
                                     border: '1px solid var(--color-border)',
-                                    color: '#fff',
+                                    color: 'var(--color-primary)',
                                     fontSize: '0.65rem',
                                     fontWeight: 800,
                                     textTransform: 'uppercase'
@@ -744,9 +744,8 @@ const AdminDashboard = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleApplyUrl(index)}
+                                  className="btn-primary"
                                   style={{
-                                    backgroundColor: 'var(--color-primary)',
-                                    color: '#000',
                                     padding: '0 1rem',
                                     fontSize: '0.7rem',
                                     fontWeight: 800,
@@ -919,12 +918,13 @@ const AdminDashboard = () => {
                             onChange={(e) => handleOrderStatusUpdate(o._id, e.target.value)}
                             style={{
                               padding: '0.4rem',
-                              backgroundColor: '#111',
-                              color: '#fff',
+                              backgroundColor: 'var(--color-surface)',
+                              color: 'var(--color-primary)',
                               border: '1px solid var(--color-border)',
                               fontSize: '0.7rem',
                               fontWeight: 800,
                               outline: 'none',
+                              borderRadius: '4px',
                             }}
                           >
                             <option value="Pending">Pending</option>

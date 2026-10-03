@@ -1,6 +1,7 @@
-import React from 'react';
-import { Mail, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Mail, ArrowRight, Check, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
 const InstagramIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -23,112 +24,166 @@ const FacebookIcon = () => (
 );
 
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const { addToast } = useToast();
+
+  const handleNewsletter = (e) => {
+    e.preventDefault();
+    if (!email || !email.includes('@')) return;
+    setSubmitted(true);
+    addToast({
+      title: 'Welcome to Apex Circle!',
+      message: 'Use code WELCOME15 for 15% off your first purchase',
+      type: 'success',
+    });
+  };
+
   return (
-    <footer style={{
-      backgroundColor: '#0A0A0C',
-      borderTop: '1px solid var(--color-border)',
-      padding: '5rem 2rem 2rem 2rem',
-      marginTop: 'auto',
-    }}>
-      <div className="container" style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '3rem',
-        marginBottom: '4rem',
-      }}>
+    <footer
+      style={{
+        backgroundColor: '#0A0A0C',
+        borderTop: '1px solid var(--color-border)',
+        padding: '5rem 2rem 2rem 2rem',
+        marginTop: 'auto',
+      }}
+    >
+      <div
+        className="container"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '3rem',
+          marginBottom: '4rem',
+        }}
+      >
         {/* Brand Newsletter Column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '0.15em' }}>HAPPY STORE</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '1.35rem', letterSpacing: '0.15em' }}>
+            HAPPY STORE
+          </h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--color-secondary)', lineHeight: 1.6, fontWeight: 500 }}>
-            Join our mailing list to receive release notifications, private collections, and membership benefits.
+            Join our private drop notification system to receive exclusive drop links, private collections, and membership benefits.
           </p>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            borderBottom: '1px solid var(--color-border)',
-            paddingBottom: '0.5rem',
-          }}>
-            <input
-              type="email"
-              placeholder="ENTER EMAIL ADDRESS"
+
+          {submitted ? (
+            <div
               style={{
+                padding: '0.85rem 1rem',
+                backgroundColor: 'rgba(52, 199, 89, 0.1)',
+                border: '1px solid #34C759',
+                color: '#34C759',
                 fontSize: '0.75rem',
-                fontWeight: 600,
-                width: '100%',
-                padding: '0.25rem 0',
-                letterSpacing: '0.05em',
-                color: '#fff',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
               }}
-            />
-            <button style={{ padding: '0.25rem' }}>
-              <ArrowRight size={16} />
-            </button>
-          </div>
+            >
+              <Check size={16} />
+              <span>Voucher Unlocked: <strong>WELCOME15</strong> (15% OFF)</span>
+            </div>
+          ) : (
+            <form
+              onSubmit={handleNewsletter}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                borderBottom: '1px solid var(--color-border)',
+                paddingBottom: '0.5rem',
+              }}
+            >
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="ENTER EMAIL FOR 15% VOUCHER"
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  width: '100%',
+                  padding: '0.25rem 0',
+                  letterSpacing: '0.05em',
+                  color: '#fff',
+                  outline: 'none',
+                }}
+              />
+              <button type="submit" style={{ padding: '0.25rem', color: '#FFF', cursor: 'pointer' }} title="Subscribe">
+                <ArrowRight size={16} />
+              </button>
+            </form>
+          )}
         </div>
 
         {/* Customer Support Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <h3 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Customer Care</h3>
+          <h3 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Customer Care
+          </h3>
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
-            <li><Link to="/checkout">Checkout & Orders</Link></li>
-            <li><a href="#shipping">Shipping & Returns</a></li>
-            <li><a href="#size-guide">Size Guides</a></li>
-            <li><a href="#contact">Contact Support</a></li>
-            <li><a href="#store-locator">Store Locator</a></li>
+            <li><Link to="/checkout" style={{ transition: 'color 0.2s' }}>Orders & Tracking</Link></li>
+            <li><Link to="/men" style={{ transition: 'color 0.2s' }}>Shipping & Dispatch</Link></li>
+            <li><Link to="/men" style={{ transition: 'color 0.2s' }}>Returns & Exchanges</Link></li>
+            <li><a href="mailto:support@happystore.com" style={{ transition: 'color 0.2s' }}>24/7 Concierge Support</a></li>
           </ul>
         </div>
 
         {/* Categories Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <h3 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Shop</h3>
+          <h3 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Shop Collections
+          </h3>
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
-            <li><Link to="/men">Men's Apparel</Link></li>
-            <li><Link to="/women">Women's Apparel</Link></li>
-            <li><Link to="/kids">Kids Collection</Link></li>
-            <li><Link to="/sneakers">Sneakers & Kicks</Link></li>
-            <li><Link to="/men?subcategory=Accessories">Streetwear Accessories</Link></li>
+            <li><Link to="/men" style={{ transition: 'color 0.2s' }}>Men's Oversized Essentials</Link></li>
+            <li><Link to="/women" style={{ transition: 'color 0.2s' }}>Women's Techwear</Link></li>
+            <li><Link to="/sneakers" style={{ transition: 'color 0.2s' }}>Platform Sneakers & Slides</Link></li>
+            <li><Link to="/kids" style={{ transition: 'color 0.2s' }}>Kids Streetwear Sets</Link></li>
           </ul>
         </div>
 
-        {/* Legal Column */}
+        {/* Company Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <h3 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Company</h3>
+          <h3 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Apex Collective
+          </h3>
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
-            <li><a href="#about">Our Story</a></li>
-            <li><a href="#sustainability">Sustainability</a></li>
-            <li><a href="#careers">Careers</a></li>
-            <li><a href="#privacy">Privacy Policy</a></li>
-            <li><a href="#terms">Terms of Service</a></li>
+            <li><Link to="/signup" style={{ color: 'var(--color-gold)', fontWeight: 800 }}>Join Black Card VIP</Link></li>
+            <li><a href="#about" style={{ transition: 'color 0.2s' }}>Our Craft & Heritage</a></li>
+            <li><a href="#sustainability" style={{ transition: 'color 0.2s' }}>Organic Cotton Standards</a></li>
+            <li><a href="#terms" style={{ transition: 'color 0.2s' }}>Terms & Authenticity Guarantee</a></li>
           </ul>
         </div>
       </div>
 
       {/* Bottom Bar */}
-      <div style={{
-        borderTop: '1px solid var(--color-border)',
-        paddingTop: '2rem',
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '1.5rem',
-      }}>
+      <div
+        style={{
+          borderTop: '1px solid var(--color-border)',
+          paddingTop: '2rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '1.5rem',
+        }}
+      >
         <span style={{ fontSize: '0.75rem', color: 'var(--color-secondary)', fontWeight: 500 }}>
           © {new Date().getFullYear()} HAPPY STORE. ALL RIGHTS RESERVED.
         </span>
 
         {/* Social Icons */}
         <div style={{ display: 'flex', gap: '1.25rem', color: 'var(--color-secondary)' }}>
-          <a href="https://instagram.com" target="_blank" rel="noreferrer" className="glow-hover" style={{ padding: '0.2rem' }}>
+          <a href="https://instagram.com" target="_blank" rel="noreferrer" className="glow-hover" style={{ padding: '0.2rem', color: '#FFF' }}>
             <InstagramIcon />
           </a>
-          <a href="https://twitter.com" target="_blank" rel="noreferrer" className="glow-hover" style={{ padding: '0.2rem' }}>
+          <a href="https://twitter.com" target="_blank" rel="noreferrer" className="glow-hover" style={{ padding: '0.2rem', color: '#FFF' }}>
             <TwitterIcon />
           </a>
-          <a href="https://facebook.com" target="_blank" rel="noreferrer" className="glow-hover" style={{ padding: '0.2rem' }}>
+          <a href="https://facebook.com" target="_blank" rel="noreferrer" className="glow-hover" style={{ padding: '0.2rem', color: '#FFF' }}>
             <FacebookIcon />
           </a>
-          <a href="mailto:support@happystore.com" className="glow-hover" style={{ padding: '0.2rem' }}>
+          <a href="mailto:support@happystore.com" className="glow-hover" style={{ padding: '0.2rem', color: '#FFF' }}>
             <Mail size={18} />
           </a>
         </div>

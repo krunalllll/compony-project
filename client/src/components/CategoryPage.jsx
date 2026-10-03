@@ -4,8 +4,10 @@ import { Filter, SlidersHorizontal, ChevronRight, X, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 import ProductCard from './ProductCard';
+import { useCurrency } from '../context/CurrencyContext';
 
 const CategoryPage = ({ defaultCategory }) => {
+  const { formatPrice } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
 
@@ -352,8 +354,8 @@ const CategoryPage = ({ defaultCategory }) => {
           style={{ width: '100%', accentColor: 'var(--color-accent)', cursor: 'pointer' }}
         />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginTop: '0.5rem', color: 'var(--color-secondary)', fontWeight: 800 }}>
-          <span>MIN: $10</span>
-          <span style={{ color: 'var(--color-primary)' }}>MAX: ${maxPrice}</span>
+          <span>MIN: {formatPrice(10)}</span>
+          <span style={{ color: 'var(--color-primary)' }}>MAX: {formatPrice(maxPrice)}</span>
         </div>
       </div>
 
@@ -701,7 +703,7 @@ const CategoryPage = ({ defaultCategory }) => {
             {/* Price Chip */}
             {maxPrice < 300 && (
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.68rem', fontWeight: 800, backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '0.2rem 0.5rem', textTransform: 'uppercase' }}>
-                Under ${maxPrice}
+                Under {formatPrice(maxPrice)}
                 <X size={12} style={{ cursor: 'pointer', color: 'var(--color-accent)' }} onClick={() => setMaxPrice(300)} />
               </span>
             )}

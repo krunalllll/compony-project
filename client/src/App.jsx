@@ -5,9 +5,15 @@ import { checkAuthStatus } from './redux/authSlice';
 import { fetchCart } from './redux/cartSlice';
 import { fetchWishlist } from './redux/wishlistSlice';
 
+// Context Providers
+import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
+import { CurrencyProvider } from './context/CurrencyContext';
+
 // Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import BackToTop from './components/BackToTop';
 
 // Pages
 import Home from './pages/Home';
@@ -58,6 +64,8 @@ const App = () => {
 
   useEffect(() => {
     dispatch(checkAuthStatus());
+    dispatch(fetchCart());
+    dispatch(fetchWishlist());
   }, [dispatch]);
 
   useEffect(() => {
@@ -86,35 +94,42 @@ const App = () => {
   }
 
   return (
-    <Router>
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--color-bg)' }}>
-        <Navbar />
-        <main style={{ flex: 1 }}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/men" element={<Men />} />
-            <Route path="/women" element={<Women />} />
-            <Route path="/kids" element={<Kids />} />
-            <Route path="/sneakers" element={<Sneakers />} />
-            <Route path="/products/:id" element={<ProductDetails />} />
-            <Route path="/checkout" element={<Profile />} />
-            <Route 
-              path="/admin-dashboard" 
-              element={
-                <ProtectedAdminRoute>
-                  <AdminDashboard />
-                </ProtectedAdminRoute>
-              } 
-            />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            {/* Fallback redirection */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </Router>
+    <ThemeProvider>
+      <CurrencyProvider>
+        <ToastProvider>
+          <Router>
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--color-bg)' }}>
+              <Navbar />
+              <main style={{ flex: 1 }}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/men" element={<Men />} />
+                  <Route path="/women" element={<Women />} />
+                  <Route path="/kids" element={<Kids />} />
+                  <Route path="/sneakers" element={<Sneakers />} />
+                  <Route path="/products/:id" element={<ProductDetails />} />
+                  <Route path="/checkout" element={<Profile />} />
+                  <Route 
+                    path="/admin-dashboard" 
+                    element={
+                      <ProtectedAdminRoute>
+                        <AdminDashboard />
+                      </ProtectedAdminRoute>
+                    } 
+                  />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  {/* Fallback redirection */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </main>
+              <Footer />
+              <BackToTop />
+            </div>
+          </Router>
+        </ToastProvider>
+      </CurrencyProvider>
+    </ThemeProvider>
   );
 };
 

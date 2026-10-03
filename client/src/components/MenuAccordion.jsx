@@ -7,7 +7,7 @@ const MenuAccordion = ({ title, items, onLinkClick }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+    <div style={{ borderBottom: '1px solid var(--color-border)' }}>
       {/* Accordion Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -21,7 +21,7 @@ const MenuAccordion = ({ title, items, onLinkClick }) => {
           fontWeight: 800,
           letterSpacing: '0.05em',
           textTransform: 'uppercase',
-          color: isOpen ? '#FFFFFF' : 'var(--color-secondary)',
+          color: isOpen ? 'var(--color-primary)' : 'var(--color-secondary)',
           cursor: 'pointer',
         }}
       >
@@ -43,7 +43,7 @@ const MenuAccordion = ({ title, items, onLinkClick }) => {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            style={{ overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.01)' }}
+            style={{ overflow: 'hidden', backgroundColor: 'var(--color-bg)' }}
           >
             <div
               style={{
@@ -68,7 +68,7 @@ const MenuAccordion = ({ title, items, onLinkClick }) => {
                     transition: 'color 0.2s ease',
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.color = '#FFFFFF';
+                    e.target.style.color = 'var(--color-primary)';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.color = 'var(--color-secondary)';

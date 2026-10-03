@@ -6,10 +6,23 @@ import api from '../services/api';
 import ProductCard from '../components/ProductCard';
 import { fetchCart, clearCart } from '../redux/cartSlice';
 import { fetchWishlist } from '../redux/wishlistSlice';
+import { useCurrency } from '../context/CurrencyContext';
+
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 const Profile = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { formatPrice } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
   const showCheckoutParam = searchParams.get('checkout') === 'true';
   const { user, isAuthenticated, checkingAuth } = useSelector((state) => state.auth);
@@ -40,10 +53,10 @@ const Profile = () => {
   }, 0);
 
   useEffect(() => {
-    if (!checkingAuth && !isAuthenticated) {
+    if (!checkingAuth && !isAuthenticated && activeTab !== 'wishlist') {
       navigate('/login');
     }
-  }, [isAuthenticated, checkingAuth, navigate]);
+  }, [isAuthenticated, checkingAuth, navigate, activeTab]);
 
   useEffect(() => {
     if (showCheckoutParam) {
@@ -88,6 +101,114 @@ const Profile = () => {
     setPlacingOrder(true);
 
     try {
+      // 1. Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        setCheckoutError('Failed to load payment gateway. Please check your connection.');
+        setPlacingOrder(false);
+        return;
+      }
+
+      const items = cartItems.map(item => ({
+        productId: item.productId._id,
+        name: item.productId.name,
+        price: item.productId.discount > 0 
+          ? item.productId.price * (1 - item.productId.discount / 100)
+          : item.productId.price,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        image: item.productId.images[0],
+      }));
+
+      const address = { street, city, state, zipCode, country };
+
+      // 2. Call backend to create Order and Razorpay Order details
+      const response = await api.post('/order', {
+        address,
+        items,
+        totalAmount,
+      });
+
+      if (response.status === 201) {
+        const { order, razorpayOrderId, amount, currency } = response.data;
+        const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_your_key_id';
+
+        // 3. Open Razorpay checkout options
+        const options = {
+          key: keyId,
+          amount: amount,
+          currency: currency,
+          name: "HAPPY STORE",
+          description: "Garments Purchase Checkout",
+          order_id: razorpayOrderId,
+          handler: async function (paymentResponse) {
+            try {
+              // 4. Verify Payment on Backend
+              const verifyRes = await api.post('/order/verify', {
+                orderId: order._id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+              });
+
+              if (verifyRes.data.success) {
+                setOrderSuccess(true);
+                dispatch(clearCart());
+                
+                const ordersRes = await api.get('/order');
+                setOrders(ordersRes.data);
+
+                setTimeout(() => {
+                  setOrderSuccess(false);
+                  handleTabChange('orders');
+                }, 3000);
+              }
+              setPlacingOrder(false);
+            } catch (err) {
+              console.error(err);
+              setCheckoutError(err.response?.data?.message || 'Payment verification failed. Please contact support.');
+              setPlacingOrder(false);
+            }
+          },
+          prefill: {
+            name: user.name,
+            email: user.email,
+          },
+          theme: {
+            color: "#0A0A0C",
+          },
+          modal: {
+            ondismiss: function () {
+              setCheckoutError('Payment cancelled by user');
+              setPlacingOrder(false);
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else {
+        setCheckoutError('Failed to initialize checkout. Please try again.');
+        setPlacingOrder(false);
+      }
+    } catch (error) {
+      console.error(error);
+      setCheckoutError(error.response?.data?.message || 'Error placing order');
+      setPlacingOrder(false);
+    }
+  };
+
+  const handleBypassPlaceOrder = async (e) => {
+    e.preventDefault();
+    if (!street || !city || !state || !zipCode || !country) {
+      setCheckoutError('Please fill out all address fields');
+      return;
+    }
+    setCheckoutError('');
+    setPlacingOrder(true);
+
+    try {
       const items = cartItems.map(item => ({
         productId: item.productId._id,
         name: item.productId.name,
@@ -109,21 +230,31 @@ const Profile = () => {
       });
 
       if (response.status === 201) {
-        setOrderSuccess(true);
-        dispatch(clearCart());
-        
-        const ordersRes = await api.get('/order');
-        setOrders(ordersRes.data);
+        const { order, razorpayOrderId } = response.data;
+        const verifyRes = await api.post('/order/verify', {
+          orderId: order._id,
+          razorpay_payment_id: 'pay_dummy_bypass_123',
+          razorpay_order_id: razorpayOrderId,
+          razorpay_signature: 'bypass_test_payment',
+        });
 
-        setTimeout(() => {
-          setOrderSuccess(false);
-          handleTabChange('orders');
-        }, 3000);
+        if (verifyRes.data.success) {
+          setOrderSuccess(true);
+          dispatch(clearCart());
+          
+          const ordersRes = await api.get('/order');
+          setOrders(ordersRes.data);
+
+          setTimeout(() => {
+            setOrderSuccess(false);
+            handleTabChange('orders');
+          }, 3000);
+        }
       }
       setPlacingOrder(false);
     } catch (error) {
       console.error(error);
-      setCheckoutError(error.response?.data?.message || 'Error placing order');
+      setCheckoutError(error.response?.data?.message || 'Error bypassing order');
       setPlacingOrder(false);
     }
   };
@@ -257,7 +388,7 @@ const Profile = () => {
                       </div>
                       <div>
                         <span style={{ fontSize: '0.7rem', color: 'var(--color-secondary)', fontWeight: 800, display: 'block', textTransform: 'uppercase' }}>AMOUNT PAID</span>
-                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-accent)' }}>${order.totalAmount.toFixed(2)}</span>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-accent)' }}>{formatPrice(order.totalAmount)}</span>
                       </div>
                       <div>
                         <span style={{ fontSize: '0.7rem', color: 'var(--color-secondary)', fontWeight: 800, display: 'block', textTransform: 'uppercase' }}>SHIPPING STATUS</span>
@@ -271,6 +402,19 @@ const Profile = () => {
                           borderColor: order.status === 'Delivered' ? '#34C759' : order.status === 'Shipped' ? '#007AFF' : '#FF9500',
                           textTransform: 'uppercase',
                         }}>{order.status}</span>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-secondary)', fontWeight: 800, display: 'block', textTransform: 'uppercase' }}>PAYMENT STATUS</span>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          padding: '0.3rem 0.6rem',
+                          backgroundColor: order.paymentStatus === 'Paid' ? 'rgba(52, 199, 89, 0.15)' : 'rgba(255, 59, 48, 0.15)',
+                          color: order.paymentStatus === 'Paid' ? '#34C759' : '#FF3B30',
+                          border: '1px solid',
+                          borderColor: order.paymentStatus === 'Paid' ? '#34C759' : '#FF3B30',
+                          textTransform: 'uppercase',
+                        }}>{order.paymentStatus || 'Pending'}</span>
                       </div>
                     </div>
 
@@ -371,6 +515,29 @@ const Profile = () => {
                   <button type="submit" disabled={placingOrder} className="btn-primary" style={{ width: '100%', padding: '1rem 0', marginTop: '1.5rem' }}>
                     {placingOrder ? 'PROCESSING TRANSACTION...' : 'PLACE ORDER'}
                   </button>
+
+                  {import.meta.env.DEV && (
+                    <button
+                      type="button"
+                      onClick={handleBypassPlaceOrder}
+                      disabled={placingOrder}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 0',
+                        marginTop: '0.75rem',
+                        backgroundColor: 'transparent',
+                        color: 'var(--color-secondary)',
+                        border: '1px dashed var(--color-border)',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Bypass Razorpay (Dev Only)
+                    </button>
+                  )}
                 </form>
               )}
             </div>
@@ -391,20 +558,20 @@ const Profile = () => {
                           <div style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '170px' }}>{item.productId.name}</div>
                           <div style={{ fontSize: '0.7rem', color: 'var(--color-secondary)' }}>SIZE: {item.size} • QTY: {item.quantity}</div>
                         </div>
-                        <span style={{ fontSize: '0.78rem', fontWeight: 800 }}>${(finalPrice * item.quantity).toFixed(2)}</span>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 800 }}>{formatPrice(finalPrice * item.quantity)}</span>
                       </div>
                     );
                   })}
                 </div>
 
                 <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifycontent: 'space-between', fontSize: '0.78rem', color: 'var(--color-secondary)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--color-secondary)' }}>
                     <span>SHIPPING CHARGE</span>
                     <span style={{ color: 'var(--color-gold)', fontWeight: 800 }}>FREE (VIP MEMBERSHIP)</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.02em', marginTop: '0.5rem' }}>
                     <span>TOTAL AMOUNT</span>
-                    <span>${totalAmount.toFixed(2)}</span>
+                    <span>{formatPrice(totalAmount)}</span>
                   </div>
                 </div>
               </div>

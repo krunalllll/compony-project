@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ShoppingCart, Star, Heart, ArrowLeft, Check, Share2, Clipboard, MessageSquare, ShieldCheck } from 'lucide-react';
+import { ShoppingCart, Star, Heart, ArrowLeft, Check, Share2, Ruler, Sparkles, Truck, ShieldCheck, Flame, Clock } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 import { addToCartAsync } from '../redux/cartSlice';
 import { addToWishlistAsync, removeFromWishlistAsync } from '../redux/wishlistSlice';
 import ProductCard from '../components/ProductCard';
+import SizeGuideModal from '../components/SizeGuideModal';
+import { useToast } from '../context/ToastContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const getImageUrl = (image) => {
   if (!image) return '';
@@ -18,8 +21,10 @@ const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { addToast } = useToast();
+  const { formatPrice } = useCurrency();
 
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated } = useSelector((state) => state.auth);
   const wishlistProducts = useSelector((state) => state.wishlist.products);
 
   const [product, setProduct] = useState(null);
@@ -29,6 +34,7 @@ const ProductDetails = () => {
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
 
   // Recommendations lists
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -38,6 +44,15 @@ const ProductDetails = () => {
   // Active Tab
   const [activeTab, setActiveTab] = useState('description');
 
+  // Sticky Bar visibility
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const buyBoxRef = useRef(null);
+
+  // Image zoom lens state
+  const [isZooming, setIsZooming] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const imageContainerRef = useRef(null);
+
   // Review Form
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
@@ -45,10 +60,20 @@ const ProductDetails = () => {
   const [reviewError, setReviewError] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  // Share Toast
-  const [showShareToast, setShowShareToast] = useState(false);
-
   const isWishlisted = wishlistProducts.some((item) => (item._id || item) === id);
+
+  // Sticky add to cart scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      if (buyBoxRef.current) {
+        const rect = buyBoxRef.current.getBoundingClientRect();
+        // Show sticky bar once user scrolls past the buy box
+        setShowStickyBar(rect.bottom < 0);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Fetch product data & suggestions
   useEffect(() => {
@@ -79,13 +104,13 @@ const ProductDetails = () => {
         const allProductsRes = await api.get('/products');
         const allProducts = allProductsRes.data;
 
-        // 1. Related Products (Same category, up to 4 items)
+        // 1. Related Products
         const related = allProducts
           .filter((p) => p.category === prodData.category && p._id !== id)
           .slice(0, 4);
         setRelatedProducts(related);
 
-        // 2. Similar Products (Same subcategory, up to 4 items)
+        // 2. Similar Products
         const similar = allProducts
           .filter((p) => p.subcategory === prodData.subcategory && p._id !== id)
           .slice(0, 4);
@@ -94,7 +119,6 @@ const ProductDetails = () => {
         // 3. Recently Viewed Products
         const recentProds = allProducts
           .filter((p) => recentList.includes(p._id) && p._id !== id)
-          // Sort to match recentList order
           .sort((a, b) => recentList.indexOf(a._id) - recentList.indexOf(b._id))
           .slice(0, 4);
         setRecentlyViewed(recentProds);
@@ -107,93 +131,15 @@ const ProductDetails = () => {
     };
 
     fetchProductDetails();
+    window.scrollTo(0, 0);
   }, [id]);
-
-  // SEO tags and JSON-LD schema
-  useEffect(() => {
-    if (!product) return;
-
-    // SEO Title
-    document.title = `${product.name} | ${product.brand} | HAPPY STORE`;
-
-    // SEO Description
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement('meta');
-      metaDesc.setAttribute('name', 'description');
-      document.head.appendChild(metaDesc);
-    }
-    metaDesc.setAttribute('content', product.description.slice(0, 160));
-
-    // Open Graph Tags
-    const setOgTag = (property, content) => {
-      let tag = document.querySelector(`meta[property="${property}"]`);
-      if (!tag) {
-        tag = document.createElement('meta');
-        tag.setAttribute('property', property);
-        document.head.appendChild(tag);
-      }
-      tag.setAttribute('content', content);
-    };
-
-    setOgTag('og:title', product.name);
-    setOgTag('og:description', product.description.slice(0, 160));
-    setOgTag('og:type', 'product');
-    setOgTag('og:url', window.location.href);
-    if (product.images && product.images.length > 0) {
-      setOgTag('og:image', getImageUrl(product.images[0]));
-    }
-
-    // Product Schema (JSON-LD)
-    let schemaScript = document.getElementById('product-jsonld-schema');
-    if (!schemaScript) {
-      schemaScript = document.createElement('script');
-      schemaScript.setAttribute('id', 'product-jsonld-schema');
-      schemaScript.setAttribute('type', 'application/ld+json');
-      document.head.appendChild(schemaScript);
-    }
-
-    const priceVal = product.discount > 0 
-      ? (product.price * (1 - product.discount / 100)).toFixed(2)
-      : product.price;
-
-    const schemaObj = {
-      "@context": "https://schema.org/",
-      "@type": "Product",
-      "name": product.name,
-      "image": product.images ? product.images.map((img) => getImageUrl(img)) : [],
-      "description": product.description,
-      "brand": {
-        "@type": "Brand",
-        "name": product.brand
-      },
-      "sku": product._id,
-      "offers": {
-        "@type": "Offer",
-        "url": window.location.href,
-        "priceCurrency": "USD",
-        "price": priceVal,
-        "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": product.ratings || 4.5,
-        "reviewCount": product.reviewsCount || 1
-      }
-    };
-    schemaScript.innerHTML = JSON.stringify(schemaObj);
-
-    return () => {
-      if (schemaScript) {
-        schemaScript.remove();
-      }
-    };
-  }, [product]);
 
   if (loading) {
     return (
       <div style={{ minHeight: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'var(--color-bg)' }}>
-        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>FETCHING PRODUCT SPECIFICS...</span>
+        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-secondary)', letterSpacing: '0.1em' }}>
+          SYNCHRONIZING GARMENT SPECIFICATIONS...
+        </span>
       </div>
     );
   }
@@ -208,47 +154,58 @@ const ProductDetails = () => {
   }
 
   const discountPrice = product.discount > 0 
-    ? (product.price * (1 - product.discount / 100)).toFixed(2)
+    ? (product.price * (1 - product.discount / 100))
     : null;
 
   const handleAddToCart = async () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
     setAddingToCart(true);
     await dispatch(addToCartAsync({
       productId: product._id,
       quantity,
       size: selectedSize || 'Free Size',
       color: selectedColor || 'Default',
+      product,
     }));
     setAddingToCart(false);
+
+    addToast({
+      title: 'Added to Bag',
+      message: `${product.name} (Size: ${selectedSize || 'Free Size'})`,
+      type: 'cart',
+      image: activeImage,
+      actionText: 'View Bag',
+      onAction: () => {
+        window.dispatchEvent(new CustomEvent('open-cart-drawer'));
+      },
+    });
   };
 
   const handleBuyNow = async () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
     await dispatch(addToCartAsync({
       productId: product._id,
       quantity,
       size: selectedSize || 'Free Size',
       color: selectedColor || 'Default',
+      product,
     }));
     navigate('/checkout?checkout=true');
   };
 
   const handleWishlistToggle = () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
     if (isWishlisted) {
       dispatch(removeFromWishlistAsync(product._id));
+      addToast({
+        title: 'Removed from Wishlist',
+        message: `${product.name} removed from your saved collection`,
+        type: 'info',
+      });
     } else {
-      dispatch(addToWishlistAsync(product._id));
+      dispatch(addToWishlistAsync(product));
+      addToast({
+        title: 'Saved to Wishlist',
+        message: `${product.name} saved to your collection`,
+        type: 'wishlist',
+      });
     }
   };
 
@@ -261,9 +218,20 @@ const ProductDetails = () => {
       }).catch(console.error);
     } else {
       navigator.clipboard.writeText(window.location.href);
-      setShowShareToast(true);
-      setTimeout(() => setShowShareToast(false), 2500);
+      addToast({
+        title: 'Link Copied',
+        message: 'Product URL copied to clipboard',
+        type: 'success',
+      });
     }
+  };
+
+  const handleMouseMove = (e) => {
+    if (!imageContainerRef.current) return;
+    const { left, top, width, height } = imageContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomPos({ x, y });
   };
 
   const handleReviewSubmit = async (e) => {
@@ -275,12 +243,17 @@ const ProductDetails = () => {
     try {
       const response = await api.post(`/products/${product._id}/reviews`, {
         rating: reviewRating,
-        comment: reviewComment
+        comment: reviewComment,
       });
       setReviewSuccess('Thank you! Review added.');
       setReviewComment('');
-      setProduct(response.data.product); // Update local product details
+      setProduct(response.data.product);
       setSubmittingReview(false);
+      addToast({
+        title: 'Review Submitted',
+        message: 'Thank you for community feedback!',
+        type: 'success',
+      });
     } catch (error) {
       console.error(error);
       setReviewError(error.response?.data?.message || 'Failed to submit review');
@@ -288,43 +261,91 @@ const ProductDetails = () => {
     }
   };
 
-  // Review Stars summary counter
-  const starCounts = [0, 0, 0, 0, 0]; // index 0 is 5 star, 1 is 4 star, etc.
-  if (product.reviews && product.reviews.length > 0) {
-    product.reviews.forEach(r => {
-      const idx = 5 - r.rating;
-      if (idx >= 0 && idx < 5) {
-        starCounts[idx]++;
-      }
-    });
-  }
-
   return (
-    <div style={{ padding: '3rem 0', backgroundColor: 'var(--color-bg)', minHeight: '100vh' }}>
+    <div style={{ padding: '2.5rem 0', backgroundColor: 'var(--color-bg)', minHeight: '100vh' }}>
       <div className="container">
         
-        {/* Back navigation */}
-        <button onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-secondary)', textTransform: 'uppercase', marginBottom: '2.5rem' }}>
-          <ArrowLeft size={16} /> Back to Catalog
-        </button>
+        {/* Breadcrumb / Back button */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-secondary)', textTransform: 'uppercase', cursor: 'pointer' }}
+          >
+            <ArrowLeft size={16} /> Back to Catalog
+          </button>
 
-        {/* Product view columns grid */}
+          {/* Social Share Button */}
+          <button
+            onClick={handleShareProduct}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-secondary)', textTransform: 'uppercase', cursor: 'pointer' }}
+          >
+            <Share2 size={15} /> Share Product
+          </button>
+        </div>
+
+        {/* Product Columns Grid */}
         <div style={{ display: 'flex', gap: '4rem', flexWrap: 'wrap', marginBottom: '5rem' }}>
           
-          {/* Left: Interactive Product Gallery */}
+          {/* Left: Interactive Fabric Magnifier Gallery */}
           <div style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ width: '100%', aspectRatio: '4/5', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
-              <img src={activeImage} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            
+            {/* Main Interactive Zoom Area */}
+            <div
+              ref={imageContainerRef}
+              onMouseEnter={() => setIsZooming(true)}
+              onMouseLeave={() => setIsZooming(false)}
+              onMouseMove={handleMouseMove}
+              style={{
+                width: '100%',
+                aspectRatio: '4/5',
+                overflow: 'hidden',
+                border: '1px solid var(--color-border)',
+                position: 'relative',
+                cursor: 'crosshair',
+                backgroundColor: 'var(--color-bg-alt)',
+              }}
+            >
+              <img
+                src={activeImage}
+                alt={product.name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                  transform: isZooming ? 'scale(2.2)' : 'scale(1)',
+                  transition: isZooming ? 'none' : 'transform 0.3s ease-out',
+                }}
+              />
+
               {product.discount > 0 && (
                 <div style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 5 }} className="badge-discount">
                   -{product.discount}% OFF
                 </div>
               )}
+
+              {/* Hover Zoom Hint */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '12px',
+                  right: '12px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                  padding: '4px 8px',
+                  fontSize: '0.62rem',
+                  fontWeight: 700,
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  pointerEvents: 'none',
+                  backdropFilter: 'blur(4px)',
+                }}
+              >
+                Hover image to magnify fabric weave
+              </div>
             </div>
 
-            {/* Thumbnail selector strip (max 4 images) */}
+            {/* Thumbnail selector strip */}
             {product.images && product.images.length > 1 && (
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto' }} className="hide-scrollbar">
                 {product.images.map((img, idx) => {
                   const url = getImageUrl(img);
                   return (
@@ -332,13 +353,15 @@ const ProductDetails = () => {
                       key={idx}
                       onClick={() => setActiveImage(url)}
                       style={{
-                        width: '72px',
-                        height: '90px',
+                        width: '74px',
+                        height: '92px',
                         overflow: 'hidden',
                         border: '1px solid',
-                        borderColor: activeImage === url ? 'var(--color-primary)' : 'var(--color-border)',
-                        opacity: activeImage === url ? 1 : 0.5,
+                        borderColor: activeImage === url ? 'var(--color-accent)' : 'var(--color-border)',
+                        opacity: activeImage === url ? 1 : 0.6,
                         transition: '0.2s',
+                        cursor: 'pointer',
+                        padding: 0,
                       }}
                     >
                       <img src={url} alt="thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -349,18 +372,25 @@ const ProductDetails = () => {
             )}
           </div>
 
-          {/* Right: Product details description */}
-          <div style={{ flex: '1 1 400px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Right: Product Details & Controls */}
+          <div ref={buyBoxRef} style={{ flex: '1 1 420px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
+            {/* Live Scarcity & High Demand badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-accent)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              <Flame size={14} />
+              <span>HIGH DEMAND: 18 PEOPLE VIEWING THIS ITEM</span>
+            </div>
+
             {/* Title / Brand */}
             <div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--color-accent)', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--color-secondary)', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
                 {product.brand} // {product.category}
               </span>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em', marginTop: '0.5rem', lineHeight: 1.1 }}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.02em', marginTop: '0.4rem', lineHeight: 1.1 }}>
                 {product.name}
               </h1>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.7rem', color: 'var(--color-secondary)', fontWeight: 700, marginTop: '0.35rem' }}>
+              
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.72rem', color: 'var(--color-secondary)', fontWeight: 700, marginTop: '0.5rem' }}>
                 <span>SKU: {product._id.slice(-8).toUpperCase()}</span>
                 <span>•</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--color-gold)' }}>
@@ -370,15 +400,22 @@ const ProductDetails = () => {
               </div>
             </div>
 
-            {/* Price section */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', padding: '1.25rem 0' }}>
+            {/* Price section with Currency formatted prices */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', padding: '1.25rem 0' }}>
               {discountPrice ? (
                 <>
-                  <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-accent)' }}>${discountPrice}</span>
-                  <span style={{ fontSize: '1.3rem', color: 'var(--color-secondary)', textDecoration: 'line-through' }}>${product.price}</span>
+                  <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-accent)' }}>
+                    {formatPrice(discountPrice)}
+                  </span>
+                  <span style={{ fontSize: '1.3rem', color: 'var(--color-secondary)', textDecoration: 'line-through' }}>
+                    {formatPrice(product.price)}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#30D158', backgroundColor: 'rgba(48, 209, 88, 0.1)', padding: '0.2rem 0.6rem' }}>
+                    SAVE {product.discount}%
+                  </span>
                 </>
               ) : (
-                <span style={{ fontSize: '1.8rem', fontWeight: 800 }}>${product.price}</span>
+                <span style={{ fontSize: '2rem', fontWeight: 900 }}>{formatPrice(product.price)}</span>
               )}
             </div>
 
@@ -387,11 +424,13 @@ const ProductDetails = () => {
               {product.description}
             </p>
 
-            {/* Colors */}
+            {/* Interactive Color Selector */}
             {product.colors && product.colors.length > 0 && (
               <div>
-                <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>Colors</span>
-                <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>
+                  Selected Color: <strong style={{ color: '#FFF' }}>{selectedColor}</strong>
+                </span>
+                <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                   {product.colors.map((color) => (
                     <button
                       key={color}
@@ -404,6 +443,8 @@ const ProductDetails = () => {
                         borderColor: selectedColor === color ? '#fff' : 'var(--color-border)',
                         backgroundColor: selectedColor === color ? 'var(--color-surface-hover)' : 'var(--color-bg-alt)',
                         textTransform: 'uppercase',
+                        cursor: 'pointer',
+                        transition: '0.2s',
                       }}
                     >
                       {color}
@@ -413,18 +454,41 @@ const ProductDetails = () => {
               </div>
             )}
 
-            {/* Sizes */}
+            {/* Interactive Sizes with Size Guide Modal Trigger */}
             {product.sizes && product.sizes.length > 0 && (
               <div>
-                <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>Sizes</span>
-                <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>
+                    Size: <strong style={{ color: '#FFF' }}>{selectedSize}</strong>
+                  </span>
+                  
+                  {/* Size Guide Trigger */}
+                  <button
+                    onClick={() => setIsSizeGuideOpen(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      color: 'var(--color-accent)',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Ruler size={13} /> Size Guide & Fit Finder
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                   {product.sizes.map((size) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
                       style={{
-                        width: '42px',
-                        height: '42px',
+                        minWidth: '46px',
+                        height: '46px',
+                        padding: '0 0.5rem',
                         fontSize: '0.75rem',
                         fontWeight: 800,
                         border: '1px solid',
@@ -433,6 +497,8 @@ const ProductDetails = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: '0.2s',
                       }}
                     >
                       {size}
@@ -442,43 +508,52 @@ const ProductDetails = () => {
               </div>
             )}
 
-            {/* Quantity */}
+            {/* Quantity Stepper */}
             <div>
-              <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>Quantity</span>
-              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)', width: 'fit-content', marginTop: '0.5rem' }}>
-                <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{ padding: '0.45rem 1rem', fontSize: '0.9rem', fontWeight: 800 }}>-</button>
-                <span style={{ minWidth: '30px', textAlign: 'center', fontSize: '0.8rem', fontWeight: 800 }}>{quantity}</span>
-                <button onClick={() => setQuantity(q => q + 1)} style={{ padding: '0.45rem 1rem', fontSize: '0.9rem', fontWeight: 800 }}>+</button>
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>
+                Quantity
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)', width: 'fit-content', marginTop: '0.5rem', backgroundColor: 'var(--color-bg-alt)' }}>
+                <button
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  -
+                </button>
+                <span style={{ minWidth: '35px', textAlign: 'center', fontSize: '0.82rem', fontWeight: 800 }}>{quantity}</span>
+                <button
+                  onClick={() => setQuantity((q) => Math.min(product.stock || 10, q + 1))}
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  +
+                </button>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-              <div style={{ display: 'flex', gap: '1rem' }}>
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.85rem' }}>
                 <button
                   onClick={handleAddToCart}
                   disabled={product.stock <= 0 || addingToCart}
                   className="btn-primary"
-                  style={{ flex: 1, padding: '1rem 0' }}
+                  style={{ flex: 1, padding: '1.1rem 0' }}
                 >
-                  <ShoppingCart size={15} />
-                  {product.stock <= 0 ? 'SOLD OUT' : addingToCart ? 'ADDING...' : 'ADD TO BAG'}
+                  <ShoppingCart size={16} />
+                  {product.stock <= 0 ? 'SOLD OUT' : addingToCart ? 'ADDING TO BAG...' : 'ADD TO BAG'}
                 </button>
 
                 <button
                   onClick={handleWishlistToggle}
                   className="btn-secondary"
-                  style={{ padding: '1rem', color: isWishlisted ? 'var(--color-accent)' : '#fff', borderColor: isWishlisted ? 'var(--color-accent)' : 'var(--color-border)' }}
+                  style={{
+                    padding: '1.1rem',
+                    color: isWishlisted ? 'var(--color-accent)' : '#fff',
+                    borderColor: isWishlisted ? 'var(--color-accent)' : 'var(--color-border)',
+                  }}
+                  title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
                 >
                   <Heart size={18} fill={isWishlisted ? 'var(--color-accent)' : 'none'} />
-                </button>
-
-                <button
-                  onClick={handleShareProduct}
-                  className="btn-secondary"
-                  style={{ padding: '1rem' }}
-                >
-                  <Share2 size={18} />
                 </button>
               </div>
 
@@ -486,35 +561,37 @@ const ProductDetails = () => {
                 <button
                   onClick={handleBuyNow}
                   className="btn-accent"
-                  style={{ width: '100%', padding: '1rem 0' }}
+                  style={{ width: '100%', padding: '1.1rem 0' }}
                 >
                   BUY IT NOW
                 </button>
               )}
             </div>
 
-            {/* Delivery / Stock status bar info */}
-            <div style={{
-              padding: '1.25rem',
-              backgroundColor: 'var(--color-bg-alt)',
-              border: '1px solid var(--color-border)',
-              fontSize: '0.78rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.6rem',
-              fontWeight: 600,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: product.stock > 5 ? '#34C759' : 'var(--color-accent)' }}>
-                <span>AVAILABILITY STATUS</span>
-                <span>{product.stock > 0 ? `In Stock (${product.stock} items remaining)` : 'Out of Stock'}</span>
+            {/* Trust and Delivery Assurance Box */}
+            <div
+              style={{
+                padding: '1.25rem',
+                backgroundColor: 'var(--color-bg-alt)',
+                border: '1px solid var(--color-border)',
+                fontSize: '0.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.65rem',
+                fontWeight: 600,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#30D158' }}>
+                <Check size={14} />
+                <span>In Stock & Ready to Ship (Remaining: {product.stock} units)</span>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--color-secondary)' }}>
-                <Check size={12} style={{ color: 'var(--color-gold)' }} />
-                <span>Priority Standard Shipping (2-3 business days)</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-secondary)' }}>
+                <Truck size={14} style={{ color: 'var(--color-gold)' }} />
+                <span>Free Express Shipping on orders over $150</span>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--color-secondary)' }}>
-                <Check size={12} style={{ color: 'var(--color-gold)' }} />
-                <span>Heavyweight fabric material grading checks</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-secondary)' }}>
+                <Clock size={14} style={{ color: 'var(--color-gold)' }} />
+                <span>Order in next 3 hrs to dispatch today</span>
               </div>
             </div>
 
@@ -522,46 +599,17 @@ const ProductDetails = () => {
 
         </div>
 
-        {/* Share Link Toast */}
-        <AnimatePresence>
-          {showShareToast && (
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              style={{
-                position: 'fixed',
-                bottom: '24px',
-                right: '24px',
-                backgroundColor: 'var(--color-primary)',
-                color: '#000',
-                padding: '0.75rem 1.5rem',
-                fontSize: '0.75rem',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                zIndex: 2000,
-                boxShadow: '0px 10px 30px rgba(0,0,0,0.5)',
-              }}
-            >
-              <Clipboard size={14} />
-              PRODUCT LINK COPIED TO CLIPBOARD
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Interactive Tabs Description specifications area */}
+        {/* Interactive Tabs: Description / Specs / Shipping / Reviews */}
         <div style={{ marginTop: '5rem', borderTop: '1px solid var(--color-border)', paddingTop: '3rem' }}>
           
           {/* Tab buttons */}
           <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem', marginBottom: '2.5rem', overflowX: 'auto' }} className="hide-scrollbar">
             {[
-              { id: 'description', label: 'Description' },
-              { id: 'specifications', label: 'Specifications' },
-              { id: 'additional', label: 'Additional Info' },
+              { id: 'description', label: 'Garment Overview' },
+              { id: 'specifications', label: 'Technical Specifications' },
+              { id: 'additional', label: 'Shipping & Returns' },
               { id: 'reviews', label: `Reviews (${product.reviews?.length || 0})` },
-            ].map(tab => (
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -573,12 +621,16 @@ const ProductDetails = () => {
                   letterSpacing: '0.05em',
                   position: 'relative',
                   paddingBottom: '1rem',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
                 }}
               >
                 {tab.label}
                 {activeTab === tab.id && (
-                  <span style={{ position: 'absolute', bottom: '-17px', left: 0, right: 0, height: '2px', backgroundColor: 'var(--color-accent)' }} />
+                  <motion.span
+                    layoutId="activeTabUnderline"
+                    style={{ position: 'absolute', bottom: '-17px', left: 0, right: 0, height: '2px', backgroundColor: 'var(--color-accent)' }}
+                  />
                 )}
               </button>
             ))}
@@ -587,13 +639,12 @@ const ProductDetails = () => {
           {/* Tab Content Box */}
           <div style={{ minHeight: '200px' }}>
             
-            {/* Description Tab (Rich text mock) */}
             {activeTab === 'description' && (
               <div style={{ fontSize: '0.88rem', color: 'var(--color-secondary)', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <p>{product.description}</p>
                 <p>Designed with streetwear culture and daily utility in mind. Every garment features careful stitching alignments, pre-shrunk heavyweight structures, and minimal premium branding elements to coordinate with your wardrobe essentials.</p>
-                <h4 style={{ color: '#fff', fontSize: '0.9rem', fontWeight: 800, marginTop: '1rem', textTransform: 'uppercase' }}>Key Details:</h4>
-                <ul style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <h4 style={{ color: '#fff', fontSize: '0.9rem', fontWeight: 800, marginTop: '0.5rem', textTransform: 'uppercase' }}>Key Details:</h4>
+                <ul style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   <li>Heavyweight weave grading for premium posture structure.</li>
                   <li>Deep ribbed cuffs and hem linings preventing outline expansions.</li>
                   <li>Double layered hood structure or multi-stitched seams.</li>
@@ -602,7 +653,6 @@ const ProductDetails = () => {
               </div>
             )}
 
-            {/* Specifications Tab (Table layout) */}
             {activeTab === 'specifications' && (
               <div style={{ maxWidth: '600px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
@@ -610,13 +660,13 @@ const ProductDetails = () => {
                     {[
                       { key: 'Fit', val: 'Oversized Boxy Silhouette' },
                       { key: 'Material', val: '100% Organic Heavyweight Cotton (450GSM)' },
-                      { key: 'Origin', val: 'Made in Portugal' },
+                      { key: 'Origin', val: 'Crafted in Portugal' },
                       { key: 'Washing', val: 'Wash cold inside out, tumble dry low or flat air-dry' },
                       { key: 'Branding', val: 'High-density matte print / clean tone-on-tone embroidery' },
                     ].map((spec, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                        <td style={{ padding: '1rem 0', fontWeight: 800, color: '#fff', textTransform: 'uppercase', fontSize: '0.75rem', width: '180px' }}>{spec.key}</td>
-                        <td style={{ padding: '1rem 0', color: 'var(--color-secondary)' }}>{spec.val}</td>
+                        <td style={{ padding: '0.9rem 0', fontWeight: 800, color: '#fff', textTransform: 'uppercase', fontSize: '0.75rem', width: '180px' }}>{spec.key}</td>
+                        <td style={{ padding: '0.9rem 0', color: 'var(--color-secondary)' }}>{spec.val}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -624,28 +674,26 @@ const ProductDetails = () => {
               </div>
             )}
 
-            {/* Additional Info Tab */}
             {activeTab === 'additional' && (
               <div style={{ fontSize: '0.85rem', color: 'var(--color-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
-                  <h4 style={{ color: '#fff', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Shipping & Returns</h4>
+                  <h4 style={{ color: '#fff', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Shipping & Dispatch</h4>
                   <p>All items in stock ship from our central logistic center. Deliveries arrive within 2-3 business days. We provide free return shipping pickups for Apex VIP Circle members. Return claims must be filed within 14 days of delivery in original unused condition.</p>
                 </div>
                 <div>
-                  <h4 style={{ color: '#fff', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Sizing Details</h4>
+                  <h4 style={{ color: '#fff', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Sizing & Tailoring</h4>
                   <p>Fits boxy and slightly oversized. If you prefer a regular fit, we recommend selecting one size smaller than your standard sizing. Cap accessories feature adjustable metal slider strapbacks fitting up to 62cm.</p>
                 </div>
               </div>
             )}
 
-            {/* Reviews Tab (Summary, List, Form) */}
             {activeTab === 'reviews' && (
               <div style={{ display: 'flex', gap: '3.5rem', flexWrap: 'wrap' }}>
                 
-                {/* Rating Summary column */}
+                {/* Rating Summary */}
                 <div style={{ flex: '1 1 250px', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   <div>
-                    <h3 style={{ fontSize: '2.5rem', fontWeight: 800, fontFamily: 'var(--font-display)', lineHeight: 1 }}>{product.ratings || 4.5}</h3>
+                    <h3 style={{ fontSize: '2.5rem', fontWeight: 900, fontFamily: 'var(--font-display)', lineHeight: 1 }}>{product.ratings || 4.5}</h3>
                     <div style={{ display: 'flex', color: 'var(--color-gold)', marginTop: '0.5rem', marginBottom: '0.25rem' }}>
                       {[...Array(5)].map((_, i) => (
                         <Star key={i} size={15} fill={i < Math.round(product.ratings || 4.5) ? 'var(--color-gold)' : 'none'} stroke="var(--color-gold)" />
@@ -653,30 +701,10 @@ const ProductDetails = () => {
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--color-secondary)', fontWeight: 700 }}>Based on {product.reviews?.length || 0} customer reviews</span>
                   </div>
-
-                  {/* Star breakdown bars */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                    {[5, 4, 3, 2, 1].map((stars, idx) => {
-                      const count = starCounts[idx];
-                      const total = product.reviews?.length || 1;
-                      const percentage = Math.min(((count / total) * 100), 100);
-                      return (
-                        <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', color: 'var(--color-secondary)', fontWeight: 700 }}>
-                          <span style={{ width: '40px' }}>{stars} Stars</span>
-                          <div style={{ flex: 1, height: '4px', backgroundColor: 'var(--color-border)', borderRadius: '2px', overflow: 'hidden' }}>
-                            <div style={{ width: `${percentage}%`, height: '100%', backgroundColor: 'var(--color-gold)' }} />
-                          </div>
-                          <span style={{ width: '20px', textAlign: 'right' }}>{count}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </div>
 
-                {/* Reviews List & Submission Form */}
+                {/* Review Form & Customer Feedback */}
                 <div style={{ flex: '2 1 450px', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-                  
-                  {/* Review Submit Form */}
                   <div className="glass" style={{ padding: '1.5rem', border: '1px solid var(--color-border)' }}>
                     <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '1.25rem' }}>Submit Product Review</h4>
                     
@@ -693,7 +721,7 @@ const ProductDetails = () => {
                                 key={val}
                                 type="button"
                                 onClick={() => setReviewRating(val)}
-                                style={{ color: val <= reviewRating ? 'var(--color-gold)' : 'var(--color-secondary)' }}
+                                style={{ color: val <= reviewRating ? 'var(--color-gold)' : 'var(--color-secondary)', cursor: 'pointer' }}
                               >
                                 <Star size={18} fill={val <= reviewRating ? 'var(--color-gold)' : 'none'} stroke="var(--color-gold)" />
                               </button>
@@ -761,8 +789,6 @@ const ProductDetails = () => {
 
         </div>
 
-        {/* related / similar / recently viewed grids */}
-        
         {/* RELATED PRODUCTS */}
         {relatedProducts.length > 0 && (
           <div style={{ marginTop: '5rem', borderTop: '1px solid var(--color-border)', paddingTop: '3.5rem' }}>
@@ -791,7 +817,7 @@ const ProductDetails = () => {
           </div>
         )}
 
-        {/* RECENTLY VIEWED PRODUCTS */}
+        {/* RECENTLY VIEWED */}
         {recentlyViewed.length > 0 && (
           <div style={{ marginTop: '5rem', borderTop: '1px solid var(--color-border)', paddingTop: '3.5rem' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2rem' }}>
@@ -806,6 +832,87 @@ const ProductDetails = () => {
         )}
 
       </div>
+
+      {/* INTERACTIVE STICKY BOTTOM ADD TO CART BAR */}
+      <AnimatePresence>
+        {showStickyBar && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'tween', duration: 0.25 }}
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: 'rgba(18, 18, 22, 0.95)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              borderTop: '1px solid var(--color-border)',
+              padding: '0.75rem 2rem',
+              zIndex: 1500,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: '0 -10px 30px rgba(0, 0, 0, 0.7)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: '42px', height: '50px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                <img src={activeImage} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#FFF' }}>{product.name}</h4>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-accent)' }}>
+                  {formatPrice(discountPrice || product.price)}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {product.sizes && product.sizes.length > 0 && (
+                <select
+                  value={selectedSize}
+                  onChange={(e) => setSelectedSize(e.target.value)}
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    color: '#FFF',
+                    padding: '0.55rem 1rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    outline: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {product.sizes.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              )}
+
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock <= 0}
+                className="btn-accent"
+                style={{ padding: '0.65rem 1.75rem', fontSize: '0.75rem', fontWeight: 800 }}
+              >
+                <ShoppingCart size={14} /> ADD TO BAG
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Render Size Guide Modal */}
+      <SizeGuideModal
+        isOpen={isSizeGuideOpen}
+        onClose={() => setIsSizeGuideOpen(false)}
+        category={product.category}
+        currentSizes={product.sizes}
+      />
     </div>
   );
 };
