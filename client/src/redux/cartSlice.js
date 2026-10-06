@@ -18,7 +18,7 @@ const saveLocalCart = (items) => {
   }
 };
 
-export const fetchCart = createAsyncThunk('cart/fetch', async (_, { rejectWithValue }) => {
+export const fetchCart = createAsyncThunk('cart/fetch', async () => {
   const token = localStorage.getItem('token');
   if (!token) {
     return getLocalCart();
@@ -29,13 +29,13 @@ export const fetchCart = createAsyncThunk('cart/fetch', async (_, { rejectWithVa
     // Also save a copy locally
     saveLocalCart(serverItems);
     return serverItems;
-  } catch (error) {
+  } catch {
     // Fallback to local cart on error
     return getLocalCart();
   }
 });
 
-export const addToCartAsync = createAsyncThunk('cart/add', async (itemData, { rejectWithValue }) => {
+export const addToCartAsync = createAsyncThunk('cart/add', async (itemData) => {
   const token = localStorage.getItem('token');
   const { productId, quantity = 1, size = 'Free Size', color = 'Default', product = null } = itemData;
 
@@ -58,7 +58,7 @@ export const addToCartAsync = createAsyncThunk('cart/add', async (itemData, { re
     (item) => (item.productId?._id || item.productId) === pId && item.size === size && item.color === color
   );
 
-  let updatedItems = [];
+  let updatedItems;
   if (existingIndex > -1) {
     updatedItems = localItems.map((item, idx) => {
       if (idx === existingIndex) {
@@ -83,7 +83,7 @@ export const addToCartAsync = createAsyncThunk('cart/add', async (itemData, { re
   return updatedItems;
 });
 
-export const updateCartItemAsync = createAsyncThunk('cart/update', async (updateData, { rejectWithValue }) => {
+export const updateCartItemAsync = createAsyncThunk('cart/update', async (updateData) => {
   const token = localStorage.getItem('token');
   const { productId, size, color, quantity } = updateData;
 
@@ -110,7 +110,7 @@ export const updateCartItemAsync = createAsyncThunk('cart/update', async (update
   return updated;
 });
 
-export const removeCartItemAsync = createAsyncThunk('cart/remove', async (removeData, { rejectWithValue }) => {
+export const removeCartItemAsync = createAsyncThunk('cart/remove', async (removeData) => {
   const token = localStorage.getItem('token');
   const { productId, size, color } = removeData;
 

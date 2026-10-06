@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, ShoppingBag, Heart, AlertCircle, Info, X, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 const ToastContext = createContext(null);
 
-export const ToastProvider = ({ children, onOpenCart }) => {
+export const ToastProvider = ({ children, _onOpenCart }) => {
   const [toasts, setToasts] = useState([]);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   const addToast = useCallback(({
     title,
@@ -24,11 +27,7 @@ export const ToastProvider = ({ children, onOpenCart }) => {
     setTimeout(() => {
       removeToast(id);
     }, duration);
-  }, []);
-
-  const removeToast = useCallback((id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+  }, [removeToast]);
 
   const getIcon = (type) => {
     switch (type) {

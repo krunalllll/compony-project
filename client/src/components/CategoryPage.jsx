@@ -6,14 +6,43 @@ import api from '../services/api';
 import ProductCard from './ProductCard';
 import { useCurrency } from '../context/CurrencyContext';
 
+// Skeleton Loader Component
+const SkeletonGrid = () => (
+  <div className="product-grid" style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+    gap: '2.5rem 1.5rem',
+    width: '100%'
+  }}>
+    {[...Array(8)].map((_, i) => (
+      <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ width: '100%', aspectRatio: '4/5', backgroundColor: 'var(--color-surface)', animation: 'pulse 1.5s infinite ease-in-out' }} />
+        <div style={{ width: '40%', height: '10px', backgroundColor: 'var(--color-surface)', animation: 'pulse 1.5s infinite ease-in-out' }} />
+        <div style={{ width: '90%', height: '16px', backgroundColor: 'var(--color-surface)', animation: 'pulse 1.5s infinite ease-in-out' }} />
+        <div style={{ width: '30%', height: '14px', backgroundColor: 'var(--color-surface)', animation: 'pulse 1.5s infinite ease-in-out' }} />
+      </div>
+    ))}
+    <style>{`
+      @keyframes pulse {
+        0% { opacity: 0.6; }
+        50% { opacity: 0.3; }
+        100% { opacity: 0.6; }
+      }
+    `}</style>
+  </div>
+);
+
 const CategoryPage = ({ defaultCategory }) => {
   const { formatPrice } = useCurrency();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
 
   // API Products State
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Sync defaultCategory when category page changes
+  const [prevDefaultCategory, setPrevDefaultCategory] = useState(defaultCategory);
 
   // Filter States
   const [selectedCategories, setSelectedCategories] = useState(defaultCategory ? [defaultCategory] : []);
@@ -28,6 +57,20 @@ const CategoryPage = ({ defaultCategory }) => {
 
   // Sort State
   const [sortBy, setSortBy] = useState('newest');
+
+  if (prevDefaultCategory !== defaultCategory) {
+    setPrevDefaultCategory(defaultCategory);
+    setSelectedCategories(defaultCategory ? [defaultCategory] : []);
+    setSelectedSubcategories([]);
+    setSelectedSizes([]);
+    setSelectedColors([]);
+    setSelectedBrands([]);
+    setMaxPrice(300);
+    setAvailability('');
+    setOnSale(false);
+    setMinRating(0);
+    setSortBy('newest');
+  }
 
   // Mobile Drawers
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
@@ -67,138 +110,123 @@ const CategoryPage = ({ defaultCategory }) => {
     metaDesc.setAttribute('content', `Shop premium heavyweight box tees, paratrooper cargo pants, technical windbreakers, and runners in the HAPPY STORE ${categoryTitle} collection.`);
   }, [defaultCategory, searchQuery]);
 
-  // Sync defaultCategory when category page changes
-  useEffect(() => {
-    if (defaultCategory) {
-      setSelectedCategories([defaultCategory]);
-    } else {
-      setSelectedCategories([]);
-    }
-    // Clear other filters
-    setSelectedSubcategories([]);
-    setSelectedSizes([]);
-    setSelectedColors([]);
-    setSelectedBrands([]);
-    setMaxPrice(300);
-    setAvailability('');
-    setOnSale(false);
-    setMinRating(0);
-    setSortBy('newest');
-  }, [defaultCategory]);
-
   // Fetch products from server
-  const fetchFilteredProducts = async () => {
-    setLoading(true);
-    try {
-      let endpoint = `/products?`;
-      const params = new URLSearchParams();
+  useEffect(() => {
+    let ignore = false;
+    const loadFilteredProducts = async () => {
+      try {
+        let endpoint = `/products?`;
+        const params = new URLSearchParams();
 
-      if (searchQuery) {
-        endpoint = `/products/search?q=${encodeURIComponent(searchQuery)}`;
-      } else {
-        // Categories
-        if (selectedCategories.length > 0) {
-          params.append('category', selectedCategories.join(','));
-        }
-        // Subcategories
-        if (selectedSubcategories.length > 0) {
-          params.append('subcategory', selectedSubcategories.join(','));
-        }
-        // Brand
-        if (selectedBrands.length > 0) {
-          params.append('brand', selectedBrands.join(','));
-        }
-        // Sizes
-        if (selectedSizes.length > 0) {
-          params.append('sizes', selectedSizes.join(','));
-        }
-        // Colors
-        if (selectedColors.length > 0) {
-          params.append('colors', selectedColors.join(','));
-        }
-        // Price limit
-        params.append('maxPrice', maxPrice.toString());
-        // Rating limit
-        if (minRating > 0) {
-          params.append('rating', minRating.toString());
-        }
-        // Availability
-        if (availability) {
-          params.append('availability', availability);
-        }
-        // Discount
-        if (onSale) {
-          params.append('discount', 'onSale');
-        }
-        // Sorting
-        params.append('sort', sortBy);
+        if (searchQuery) {
+          endpoint = `/products/search?q=${encodeURIComponent(searchQuery)}`;
+        } else {
+          // Categories
+          if (selectedCategories.length > 0) {
+            params.append('category', selectedCategories.join(','));
+          }
+          // Subcategories
+          if (selectedSubcategories.length > 0) {
+            params.append('subcategory', selectedSubcategories.join(','));
+          }
+          // Brand
+          if (selectedBrands.length > 0) {
+            params.append('brand', selectedBrands.join(','));
+          }
+          // Sizes
+          if (selectedSizes.length > 0) {
+            params.append('sizes', selectedSizes.join(','));
+          }
+          // Colors
+          if (selectedColors.length > 0) {
+            params.append('colors', selectedColors.join(','));
+          }
+          // Price limit
+          params.append('maxPrice', maxPrice.toString());
+          // Rating limit
+          if (minRating > 0) {
+            params.append('rating', minRating.toString());
+          }
+          // Availability
+          if (availability) {
+            params.append('availability', availability);
+          }
+          // Discount
+          if (onSale) {
+            params.append('discount', 'onSale');
+          }
+          // Sorting
+          params.append('sort', sortBy);
 
-        endpoint += params.toString();
-      }
+          endpoint += params.toString();
+        }
 
-      const response = await api.get(endpoint);
-      let data = response.data;
+        const response = await api.get(endpoint);
+        if (ignore) return;
+        let data = response.data;
 
-      // If search query is present, apply local filters on search results since search route is simple
-      if (searchQuery) {
-        if (selectedCategories.length > 0) {
-          data = data.filter(p => selectedCategories.some(c => p.category.toLowerCase() === c.toLowerCase()));
-        }
-        if (selectedSubcategories.length > 0) {
-          data = data.filter(p => selectedSubcategories.some(s => p.subcategory.toLowerCase() === s.toLowerCase()));
-        }
-        if (selectedBrands.length > 0) {
-          data = data.filter(p => selectedBrands.some(b => p.brand.toLowerCase() === b.toLowerCase()));
-        }
-        if (selectedSizes.length > 0) {
-          data = data.filter(p => p.sizes.some(s => selectedSizes.includes(s)));
-        }
-        if (selectedColors.length > 0) {
-          data = data.filter(p => p.colors.some(c => selectedColors.some(sc => sc.toLowerCase() === c.toLowerCase())));
-        }
-        if (maxPrice) {
-          data = data.filter(p => p.price <= maxPrice);
-        }
-        if (minRating > 0) {
-          data = data.filter(p => p.ratings >= minRating);
-        }
-        if (availability) {
-          if (availability === 'inStock') {
-            data = data.filter(p => p.stock > 0);
-          } else {
-            data = data.filter(p => p.stock === 0);
+        // If search query is present, apply local filters on search results since search route is simple
+        if (searchQuery) {
+          if (selectedCategories.length > 0) {
+            data = data.filter(p => selectedCategories.some(c => p.category.toLowerCase() === c.toLowerCase()));
+          }
+          if (selectedSubcategories.length > 0) {
+            data = data.filter(p => selectedSubcategories.some(s => p.subcategory.toLowerCase() === s.toLowerCase()));
+          }
+          if (selectedBrands.length > 0) {
+            data = data.filter(p => selectedBrands.some(b => p.brand.toLowerCase() === b.toLowerCase()));
+          }
+          if (selectedSizes.length > 0) {
+            data = data.filter(p => p.sizes.some(s => selectedSizes.includes(s)));
+          }
+          if (selectedColors.length > 0) {
+            data = data.filter(p => p.colors.some(c => selectedColors.some(sc => sc.toLowerCase() === c.toLowerCase())));
+          }
+          if (maxPrice) {
+            data = data.filter(p => p.price <= maxPrice);
+          }
+          if (minRating > 0) {
+            data = data.filter(p => p.ratings >= minRating);
+          }
+          if (availability) {
+            if (availability === 'inStock') {
+              data = data.filter(p => p.stock > 0);
+            } else {
+              data = data.filter(p => p.stock === 0);
+            }
+          }
+          if (onSale) {
+            data = data.filter(p => p.discount > 0);
+          }
+
+          // Apply sorting on search results
+          if (sortBy === 'priceAsc') {
+            data.sort((a, b) => a.price - b.price);
+          } else if (sortBy === 'priceDesc') {
+            data.sort((a, b) => b.price - a.price);
+          } else if (sortBy === 'newest') {
+            data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          } else if (sortBy === 'bestSelling') {
+            data.sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0));
+          } else if (sortBy === 'mostPopular') {
+            data.sort((a, b) => (b.ratings || 0) - (a.ratings || 0));
+          } else if (sortBy === 'featured') {
+            data.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
           }
         }
-        if (onSale) {
-          data = data.filter(p => p.discount > 0);
-        }
 
-        // Apply sorting on search results
-        if (sortBy === 'priceAsc') {
-          data.sort((a, b) => a.price - b.price);
-        } else if (sortBy === 'priceDesc') {
-          data.sort((a, b) => b.price - a.price);
-        } else if (sortBy === 'newest') {
-          data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        } else if (sortBy === 'bestSelling') {
-          data.sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0));
-        } else if (sortBy === 'mostPopular') {
-          data.sort((a, b) => (b.ratings || 0) - (a.ratings || 0));
-        } else if (sortBy === 'featured') {
-          data.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
-        }
+        setProducts(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching filtered products:', error);
+        if (!ignore) setLoading(false);
       }
+    };
 
-      setProducts(data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching filtered products:', error);
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFilteredProducts();
+    loadFilteredProducts();
+    return () => {
+      ignore = true;
+    };
   }, [searchQuery, selectedCategories, selectedSubcategories, selectedSizes, selectedColors, selectedBrands, maxPrice, minRating, availability, onSale, sortBy]);
 
   // Handler functions for checkboxes
@@ -263,31 +291,6 @@ const CategoryPage = ({ defaultCategory }) => {
     }
   };
 
-  // Skeleton Loader Component
-  const SkeletonGrid = () => (
-    <div className="product-grid" style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-      gap: '2.5rem 1.5rem',
-      width: '100%'
-    }}>
-      {[...Array(8)].map((_, i) => (
-        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div style={{ width: '100%', aspectRatio: '4/5', backgroundColor: 'var(--color-surface)', animation: 'pulse 1.5s infinite ease-in-out' }} />
-          <div style={{ width: '40%', height: '10px', backgroundColor: 'var(--color-surface)', animation: 'pulse 1.5s infinite ease-in-out' }} />
-          <div style={{ width: '90%', height: '16px', backgroundColor: 'var(--color-surface)', animation: 'pulse 1.5s infinite ease-in-out' }} />
-          <div style={{ width: '30%', height: '14px', backgroundColor: 'var(--color-surface)', animation: 'pulse 1.5s infinite ease-in-out' }} />
-        </div>
-      ))}
-      <style>{`
-        @keyframes pulse {
-          0% { opacity: 0.6; }
-          50% { opacity: 0.3; }
-          100% { opacity: 0.6; }
-        }
-      `}</style>
-    </div>
-  );
 
   // Render filter list elements
   const renderFilterSidebarContent = () => (
@@ -303,7 +306,7 @@ const CategoryPage = ({ defaultCategory }) => {
             {categoriesList.map(cat => (
               <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-secondary)', cursor: 'pointer' }} className="checkbox-label">
                 <input type="checkbox" checked={selectedCategories.includes(cat)} onChange={() => handleToggle(selectedCategories, setSelectedCategories, cat)} style={{ accentColor: 'var(--color-accent)' }} />
-                <span className="checkbox-text" style={{ color: selectedCategories.includes(cat) ? '#fff' : 'inherit' }}>{cat.toUpperCase()}</span>
+                <span className="checkbox-text" style={{ color: selectedCategories.includes(cat) ? 'var(--color-primary)' : 'inherit', fontWeight: selectedCategories.includes(cat) ? 700 : 500 }}>{cat.toUpperCase()}</span>
               </label>
             ))}
           </div>
@@ -319,7 +322,7 @@ const CategoryPage = ({ defaultCategory }) => {
           {subcategoriesList.map(subcat => (
             <label key={subcat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-secondary)', cursor: 'pointer' }}>
               <input type="checkbox" checked={selectedSubcategories.includes(subcat)} onChange={() => handleToggle(selectedSubcategories, setSelectedSubcategories, subcat)} style={{ accentColor: 'var(--color-accent)' }} />
-              <span style={{ color: selectedSubcategories.includes(subcat) ? '#fff' : 'inherit' }}>{subcat.toUpperCase()}</span>
+              <span style={{ color: selectedSubcategories.includes(subcat) ? 'var(--color-primary)' : 'inherit', fontWeight: selectedSubcategories.includes(subcat) ? 700 : 500 }}>{subcat.toUpperCase()}</span>
             </label>
           ))}
         </div>
@@ -334,7 +337,7 @@ const CategoryPage = ({ defaultCategory }) => {
           {brandsList.map(brand => (
             <label key={brand} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-secondary)', cursor: 'pointer' }}>
               <input type="checkbox" checked={selectedBrands.includes(brand)} onChange={() => handleToggle(selectedBrands, setSelectedBrands, brand)} style={{ accentColor: 'var(--color-accent)' }} />
-              <span style={{ color: selectedBrands.includes(brand) ? '#fff' : 'inherit' }}>{brand.toUpperCase()}</span>
+              <span style={{ color: selectedBrands.includes(brand) ? 'var(--color-primary)' : 'inherit', fontWeight: selectedBrands.includes(brand) ? 700 : 500 }}>{brand.toUpperCase()}</span>
             </label>
           ))}
         </div>
@@ -376,9 +379,9 @@ const CategoryPage = ({ defaultCategory }) => {
                   fontSize: '0.68rem',
                   fontWeight: 800,
                   border: '1px solid',
-                  borderColor: isSelected ? '#fff' : 'var(--color-border)',
+                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
                   backgroundColor: isSelected ? 'var(--color-surface-hover)' : 'var(--color-bg-alt)',
-                  color: isSelected ? '#fff' : 'var(--color-secondary)',
+                  color: isSelected ? 'var(--color-primary)' : 'var(--color-secondary)',
                   textAlign: 'center',
                   transition: '0.2s',
                 }}
@@ -407,9 +410,9 @@ const CategoryPage = ({ defaultCategory }) => {
                   fontSize: '0.68rem',
                   fontWeight: 700,
                   border: '1px solid',
-                  borderColor: isSelected ? '#fff' : 'var(--color-border)',
+                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
                   backgroundColor: isSelected ? 'var(--color-surface-hover)' : 'var(--color-bg-alt)',
-                  color: isSelected ? '#fff' : 'var(--color-secondary)',
+                  color: isSelected ? 'var(--color-primary)' : 'var(--color-secondary)',
                   textTransform: 'uppercase',
                   transition: '0.2s',
                 }}
@@ -439,7 +442,7 @@ const CategoryPage = ({ defaultCategory }) => {
                 onChange={() => setAvailability(opt.value)}
                 style={{ accentColor: 'var(--color-accent)' }}
               />
-              <span style={{ color: availability === opt.value ? '#fff' : 'inherit' }}>{opt.label.toUpperCase()}</span>
+              <span style={{ color: availability === opt.value ? 'var(--color-primary)' : 'inherit', fontWeight: availability === opt.value ? 700 : 500 }}>{opt.label.toUpperCase()}</span>
             </label>
           ))}
         </div>
@@ -457,7 +460,7 @@ const CategoryPage = ({ defaultCategory }) => {
             onChange={() => setOnSale(!onSale)}
             style={{ accentColor: 'var(--color-accent)' }}
           />
-          <span style={{ color: onSale ? '#fff' : 'inherit' }}>ON SALE / OFFERS</span>
+          <span style={{ color: onSale ? 'var(--color-primary)' : 'inherit', fontWeight: onSale ? 700 : 500 }}>ON SALE / OFFERS</span>
         </label>
       </div>
 
@@ -477,7 +480,7 @@ const CategoryPage = ({ defaultCategory }) => {
                 gap: '0.4rem',
                 fontSize: '0.75rem',
                 fontWeight: minRating === stars ? 800 : 500,
-                color: minRating === stars ? '#fff' : 'var(--color-secondary)',
+                color: minRating === stars ? 'var(--color-primary)' : 'var(--color-secondary)',
                 textAlign: 'left',
               }}
             >
@@ -501,11 +504,11 @@ const CategoryPage = ({ defaultCategory }) => {
         
         {/* Breadcrumb Navigation */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'var(--color-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1.5rem' }}>
-          <Link to="/" style={{ transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = 'var(--color-secondary)'}>Home</Link>
+          <Link to="/" style={{ transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'var(--color-primary)'} onMouseLeave={(e) => e.target.style.color = 'var(--color-secondary)'}>Home</Link>
           <ChevronRight size={10} />
           {defaultCategory ? (
             <>
-              <Link to={`/${defaultCategory.toLowerCase()}`} style={{ transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = 'var(--color-secondary)'}>{defaultCategory}</Link>
+              <Link to={`/${defaultCategory.toLowerCase()}`} style={{ transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'var(--color-primary)'} onMouseLeave={(e) => e.target.style.color = 'var(--color-secondary)'}>{defaultCategory}</Link>
               {selectedSubcategories.length === 1 && (
                 <>
                   <ChevronRight size={10} />
@@ -521,10 +524,20 @@ const CategoryPage = ({ defaultCategory }) => {
         {/* Category Header Title Block */}
         <div style={{
           position: 'relative',
-          padding: '2.5rem 2rem',
+          padding: '3rem 2.5rem',
           border: '1px solid var(--color-border)',
           backgroundColor: 'var(--color-bg-alt)',
-          backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.85)), url(https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=1200&q=80)',
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.85)), url(${
+            defaultCategory?.toLowerCase() === 'men'
+              ? 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=1600&q=80'
+              : defaultCategory?.toLowerCase() === 'women'
+              ? 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1600&q=80'
+              : defaultCategory?.toLowerCase() === 'kids'
+              ? 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?auto=format&fit=crop&w=1600&q=80'
+              : defaultCategory?.toLowerCase() === 'sneakers'
+              ? 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1600&q=80'
+              : 'https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=1600&q=80'
+          })`,
           backgroundSize: 'cover',
           backgroundPosition: 'center 35%',
           marginBottom: '2.5rem',
@@ -532,17 +545,30 @@ const CategoryPage = ({ defaultCategory }) => {
           flexDirection: 'column',
           justifyContent: 'center',
         }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#fff', lineHeight: 1.1 }}>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            color: 'var(--color-accent)',
+            fontSize: '0.68rem',
+            fontWeight: 800,
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            marginBottom: '0.6rem',
+          }}>
+            HAPPY STORE // ARCHIVE DROP 04
+          </span>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#fff', lineHeight: 1.05 }}>
             {searchQuery ? `Search Results: "${searchQuery}"` : (defaultCategory ? `${defaultCategory}'s Collection` : 'All Apparel')}
           </h1>
-          <p style={{ color: 'var(--color-secondary)', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.03em', marginTop: '0.5rem', maxWidth: '600px', lineHeight: 1.4 }}>
+          <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.85rem', fontWeight: 500, letterSpacing: '0.02em', marginTop: '0.6rem', maxWidth: '640px', lineHeight: 1.5 }}>
             {searchQuery 
-              ? `Displaying all products matching your search term. Refine using catalog filters.`
-              : (defaultCategory === 'Men' ? 'Heavyweight drop-shoulder hoodies, technical paratrooper cargoes, and military strapbacks designed for modern urban utility.' 
-              : defaultCategory === 'Women' ? 'Vibrant oversized graphic tees, utility cropped jackets, and stretch knitwear balancing technical utility and premium aesthetic.'
-              : defaultCategory === 'Kids' ? 'Premium active cotton sets and drop-shoulder hoodies scaled down for ultimate daily comfort and durability.'
-              : defaultCategory === 'Sneakers' ? 'Futuristic runner platforms, chunky custom EVA mesh midsoles, and neon vulcanised runners.'
-              : 'Our full streetwear catalogue featuring signature designs and high-performance technical clothing.')}
+              ? `Displaying all garments matching your query. Filter by size, silhouette, and brand below.`
+              : (defaultCategory === 'Men' ? 'Heavyweight 480GSM loopback terry hoodies, modular paratrooper cargo pants, and boxy cut tees engineered for modern urban utility.' 
+              : defaultCategory === 'Women' ? 'Editorial techwear pieces, high-waisted utilitarian silhouettes, cropped drop-shoulder fits, and minimalist luxury layers.'
+              : defaultCategory === 'Kids' ? 'Scaled-down miniature streetwear silhouettes crafted with 100% pre-shrunk combed cotton for maximum durability and play comfort.'
+              : defaultCategory === 'Sneakers' ? 'Sculpted chunky EVA foam midsoles, retro vulcanised low-tops, and high-performance technical street kicks.'
+              : 'Our complete streetwear archive showcasing precision draping, custom-milled textiles, and timeless utilitarian silhouettes.')}
           </p>
         </div>
 
@@ -567,7 +593,7 @@ const CategoryPage = ({ defaultCategory }) => {
                 gap: '0.5rem',
                 fontSize: '0.75rem',
                 fontWeight: 800,
-                color: '#fff',
+                color: 'var(--color-primary)',
                 textTransform: 'uppercase',
                 border: '1px solid var(--color-border)',
                 padding: '0.5rem 1rem',
@@ -589,7 +615,7 @@ const CategoryPage = ({ defaultCategory }) => {
                 gap: '0.5rem',
                 fontSize: '0.75rem',
                 fontWeight: 800,
-                color: '#fff',
+                color: 'var(--color-primary)',
                 textTransform: 'uppercase',
                 border: '1px solid var(--color-border)',
                 padding: '0.5rem 1rem',
@@ -620,7 +646,7 @@ const CategoryPage = ({ defaultCategory }) => {
                 padding: '0.5rem 1.5rem 0.5rem 0.75rem',
                 backgroundColor: 'var(--color-bg-alt)',
                 border: '1px solid var(--color-border)',
-                color: '#fff',
+                color: 'var(--color-primary)',
                 fontSize: '0.78rem',
                 fontWeight: 800,
                 textTransform: 'uppercase',
@@ -644,7 +670,7 @@ const CategoryPage = ({ defaultCategory }) => {
               display: 'none', // Mobile only
               fontSize: '0.75rem',
               fontWeight: 800,
-              color: '#fff',
+              color: 'var(--color-primary)',
               textTransform: 'uppercase',
               border: '1px solid var(--color-border)',
               padding: '0.5rem 1rem',
@@ -789,7 +815,7 @@ const CategoryPage = ({ defaultCategory }) => {
                 textAlign: 'center',
                 color: 'var(--color-secondary)'
               }}>
-                <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>No Garments Match Filter Conditions</span>
+                <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>No Garments Match Filter Conditions</span>
                 <p style={{ fontSize: '0.8rem', maxWidth: '400px', lineHeight: 1.4 }}>Try broadening your choices, resetting the price threshold slider, or clearing active filters.</p>
                 <button onClick={handleClearAll} className="btn-secondary" style={{ fontSize: '0.75rem' }}>
                   RESET ALL FILTERS
@@ -926,7 +952,7 @@ const CategoryPage = ({ defaultCategory }) => {
                         fontSize: '0.8rem',
                         fontWeight: isSelected ? 800 : 500,
                         backgroundColor: isSelected ? 'var(--color-surface)' : 'transparent',
-                        color: isSelected ? 'var(--color-accent)' : '#fff',
+                        color: isSelected ? 'var(--color-accent)' : 'var(--color-primary)',
                         display: 'block',
                       }}
                     >

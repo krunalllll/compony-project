@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, LogOut, ShieldCheck, HelpCircle } from 'lucide-react';
+import { X, LogOut, HelpCircle } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser } from '../redux/authSlice';
@@ -198,23 +198,22 @@ const MegaMenu = ({ isOpen, onClose }) => {
   
   // Tab states: MEN | WOMEN | KIDS | SNEAKERS
   const categoriesList = ['MEN', 'WOMEN', 'KIDS', 'SNEAKERS'];
-  const [activeTab, setActiveTab] = useState('MEN');
+  const getTabFromPath = (path) => {
+    if (path.startsWith('/women')) return 'WOMEN';
+    if (path.startsWith('/kids')) return 'KIDS';
+    if (path.startsWith('/sneakers')) return 'SNEAKERS';
+    return 'MEN';
+  };
+
+  const [prevPath, setPrevPath] = useState(location.pathname);
+  const [activeTab, setActiveTab] = useState(() => getTabFromPath(location.pathname));
+
+  if (prevPath !== location.pathname) {
+    setPrevPath(location.pathname);
+    setActiveTab(getTabFromPath(location.pathname));
+  }
 
   const { user, isAuthenticated } = useSelector((state) => state.auth);
-
-  // Sync activeTab with URL if path matches
-  useEffect(() => {
-    const path = location.pathname;
-    if (path.startsWith('/women')) {
-      setActiveTab('WOMEN');
-    } else if (path.startsWith('/kids')) {
-      setActiveTab('KIDS');
-    } else if (path.startsWith('/sneakers')) {
-      setActiveTab('SNEAKERS');
-    } else {
-      setActiveTab('MEN');
-    }
-  }, [location.pathname, isOpen]);
 
   // Lock body scroll when drawer is open
   useEffect(() => {
@@ -321,13 +320,16 @@ const MegaMenu = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', width: '100%', marginTop: '0.75rem' }}>
+                      <Link to="/profile" onClick={handleLinkClick} className="btn-secondary" style={{ padding: '0.45rem 0.75rem', fontSize: '0.68rem', flex: 1, textTransform: 'uppercase', fontWeight: 800, textAlign: 'center', borderRadius: '4px' }}>
+                        MY PROFILE
+                      </Link>
                       {user.role === 'admin' && (
-                        <Link to="/admin-dashboard" onClick={handleLinkClick} className="btn-accent" style={{ padding: '0.45rem 0.75rem', fontSize: '0.68rem', flex: 1, color: '#fff', textTransform: 'uppercase', fontWeight: 800, textAlign: 'center', borderRadius: '4px' }}>
-                          ADMIN SCOPE
+                        <Link to="/admin-dashboard" onClick={handleLinkClick} className="btn-accent" style={{ padding: '0.45rem 0.75rem', fontSize: '0.68rem', flex: 1, color: 'var(--color-bg-alt)', textTransform: 'uppercase', fontWeight: 800, textAlign: 'center', borderRadius: '4px' }}>
+                          ADMIN
                         </Link>
                       )}
-                      <button onClick={handleLogout} className="btn-secondary" style={{ padding: '0.45rem 0.75rem', fontSize: '0.68rem', flex: user.role === 'admin' ? 0.7 : 1, textTransform: 'uppercase', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', borderRadius: '4px' }}>
-                        LOGOUT
+                      <button onClick={handleLogout} className="btn-secondary" style={{ padding: '0.45rem 0.75rem', fontSize: '0.68rem', flex: 0.8, textTransform: 'uppercase', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', borderRadius: '4px' }}>
+                        <LogOut size={12} /> LOGOUT
                       </button>
                     </div>
                   </div>

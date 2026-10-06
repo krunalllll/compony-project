@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, ShieldCheck, Truck, RotateCcw, Lock, Headphones, Star, Tag, Eye } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Truck, RotateCcw, Lock, Headphones, Star, Tag } from 'lucide-react';
 import api from '../services/api';
 import ProductCard from '../components/ProductCard';
 import CategoryPage from '../components/CategoryPage';
@@ -47,7 +47,7 @@ const Women = () => {
         const response = await api.get('/products');
         // Filter only Women category products
         const womenProds = response.data.filter(prod => prod.category && prod.category.toLowerCase() === 'women');
-        setProducts(womenProds.slice(0, 4));
+        setProducts(womenProds);
         setLoading(false);
       } catch (error) {
         console.error('Error loading women products:', error);
@@ -144,6 +144,7 @@ const Women = () => {
               textTransform: 'uppercase',
               lineHeight: 0.95,
               letterSpacing: '-0.02em',
+              color: '#FFFFFF',
             }}
           >
             {slides[currentSlide].title}
@@ -156,7 +157,7 @@ const Women = () => {
             transition={{ delay: 0.4 }}
             style={{
               fontSize: 'clamp(0.85rem, 1.8vw, 1.05rem)',
-              color: 'var(--color-secondary)',
+              color: 'rgba(255, 255, 255, 0.85)',
               fontWeight: 600,
               letterSpacing: '0.05em',
               textTransform: 'uppercase',
@@ -243,7 +244,7 @@ const Women = () => {
                   fontWeight: 800,
                   letterSpacing: '0.15em',
                   textTransform: 'uppercase',
-                  color: '#FFF',
+                  color: 'var(--color-primary)',
                 }}>
                   {cat.name}
                 </h3>
@@ -265,14 +266,14 @@ const Women = () => {
           background: 'radial-gradient(circle, rgba(255, 78, 80, 0.08) 0%, rgba(0,0,0,0) 70%)',
           zIndex: 1,
         }} />
-        <div className="container" style={{ position: 'relative', zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1.2rem' }}>
+        <div className="container" style={{ position: 'relative', zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1.2rem', color: '#FFFFFF' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-accent)', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.2em' }}>
             <Tag size={14} /> EXCLUSIVE SHOPPER OFFER
           </span>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.1 }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.1, color: '#FFFFFF' }}>
             BUY 2 GET 1 FREE ON ALL WOMEN CROPS & TEES
           </h2>
-          <p style={{ color: 'var(--color-secondary)', fontSize: '0.85rem', maxWidth: '600px', lineHeight: 1.6, fontWeight: 500 }}>
+          <p style={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: '0.85rem', maxWidth: '600px', lineHeight: 1.6, fontWeight: 500 }}>
             Stock up on seasonal essentials. Mix and match graphic tees, basic crops, and tank tops. Free shipping automatically applies.
           </p>
           <div style={{ display: 'inline-flex', padding: '0.75rem 2.2rem', border: '1px dashed var(--color-accent)', backgroundColor: 'rgba(255, 78, 80, 0.05)', fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.1em' }}>
@@ -292,7 +293,7 @@ const Women = () => {
               <span style={{ color: 'var(--color-accent)', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.2em' }}>HOT RELEASES</span>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '0.25rem' }}>TRENDING NOW</h2>
             </div>
-            <Link to="/women?catalog=true" style={{ fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.05em', borderBottom: '1px solid #fff', paddingBottom: '0.25rem' }}>
+            <Link to="/women?catalog=true" style={{ fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.05em', borderBottom: '1px solid var(--color-primary)', paddingBottom: '0.25rem' }}>
               VIEW CATALOGUE
             </Link>
           </div>
@@ -324,10 +325,10 @@ const Women = () => {
         borderBottom: '1px solid var(--color-border)',
       }}>
         <div className="container">
-          <div style={{ maxWidth: '550px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1.2rem' }}>
+          <div style={{ maxWidth: '550px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1.2rem', color: '#FFFFFF' }}>
             <span style={{ color: 'var(--color-gold)', fontWeight: 800, fontSize: '0.7rem', letterSpacing: '0.25em', textTransform: 'uppercase' }}>SEASONAL LOOKBOOK</span>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.05 }}>FUTURE UTILITY STREETWEAR</h2>
-            <p style={{ color: 'var(--color-secondary)', fontSize: '0.85rem', lineHeight: 1.6, fontWeight: 500 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.05, color: '#FFFFFF' }}>FUTURE UTILITY STREETWEAR</h2>
+            <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.85rem', lineHeight: 1.6, fontWeight: 500 }}>
               Discover our Summer 2026 styling campaign. Heavy tech cargo pairings, structured vests, and breathable fabrics configured for daily city walks.
             </p>
             <Link to="/women?catalog=true" className="btn-primary" style={{ padding: '0.9rem 2rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -409,7 +410,7 @@ const Women = () => {
                 title: "Fast exchange & friendly care"
               }
             ].map((review, i) => (
-              <div key={i} style={{ backgroundColor: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', padding: '2rem', display: 'flex', flexDirection: 'column', justifycontent: 'space-between', gap: '1.5rem' }}>
+              <div key={i} style={{ backgroundColor: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1.5rem' }}>
                 <div>
                   <div style={{ display: 'flex', gap: '0.2rem', marginBottom: '0.8rem' }}>
                     {[...Array(review.rating)].map((_, idx) => (
@@ -419,11 +420,11 @@ const Women = () => {
                   <h4 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.02em' }}>{review.title}</h4>
                   <p style={{ fontSize: '0.8rem', color: 'var(--color-secondary)', lineHeight: 1.6, fontWeight: 500 }}>"{review.quote}"</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '1rem' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--color-accent)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem' }}>
                     {review.author[0]}
                   </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff' }}>{review.author}</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-primary)' }}>{review.author}</span>
                 </div>
               </div>
             ))}

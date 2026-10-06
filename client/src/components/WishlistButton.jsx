@@ -48,11 +48,11 @@ const WishlistButton = ({ productId, product = null, style }) => {
         justifyContent: 'center',
         padding: '0.6rem',
         borderRadius: '50%',
-        backgroundColor: isWishlisted ? 'rgba(255, 59, 48, 0.2)' : 'rgba(10, 10, 12, 0.65)',
+        backgroundColor: isWishlisted ? 'rgba(225, 29, 72, 0.15)' : 'rgba(10, 10, 12, 0.65)',
         border: '1px solid',
-        borderColor: isWishlisted ? 'var(--color-accent)' : 'rgba(255, 255, 255, 0.15)',
+        borderColor: isWishlisted ? '#E11D48' : 'rgba(255, 255, 255, 0.15)',
         backdropFilter: 'blur(8px)',
-        color: isWishlisted ? 'var(--color-accent)' : '#FFFFFF',
+        color: isWishlisted ? '#E11D48' : '#FFFFFF',
         cursor: 'pointer',
         ...style,
       }}
@@ -61,7 +61,7 @@ const WishlistButton = ({ productId, product = null, style }) => {
         animate={isWishlisted ? { scale: [1, 1.3, 1] } : { scale: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <Heart size={16} fill={isWishlisted ? 'var(--color-accent)' : 'none'} style={{ transition: 'fill 0.2s, color 0.2s' }} />
+        <Heart size={16} fill={isWishlisted ? '#E11D48' : 'none'} style={{ transition: 'fill 0.2s, color 0.2s' }} />
       </motion.div>
     </motion.button>
   );

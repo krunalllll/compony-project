@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Edit, Users, ShoppingCart, DollarSign, Package, Upload, ArrowLeft, ArrowRight, X, Link as LinkIcon, RefreshCw } from 'lucide-react';
+import { Trash2, Edit, Users, ShoppingCart, DollarSign, Package, Upload, ArrowLeft, ArrowRight, X, Link as LinkIcon } from 'lucide-react';
 import api from '../services/api';
 
 const getImageUrl = (image) => {
@@ -56,22 +56,10 @@ const AdminDashboard = () => {
   ];
 
   useEffect(() => {
-    if (!isAuthenticated || user.role !== 'admin') {
+    if (!isAuthenticated || user?.role !== 'admin') {
       navigate('/');
     }
   }, [isAuthenticated, user, navigate]);
-
-  const loadDashboardStats = async () => {
-    setStatsLoading(true);
-    try {
-      const response = await api.get('/admin/dashboard');
-      setStats(response.data);
-      setStatsLoading(false);
-    } catch (error) {
-      console.error(error);
-      setStatsLoading(false);
-    }
-  };
 
   const loadResources = async () => {
     setLoadingItems(true);
@@ -93,13 +81,43 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    if (isAuthenticated && user.role === 'admin') {
+    let ignore = false;
+    if (isAuthenticated && user?.role === 'admin') {
       if (activeTab === 'dashboard') {
-        loadDashboardStats();
+        api.get('/admin/dashboard')
+          .then((response) => {
+            if (!ignore) {
+              setStats(response.data);
+              setStatsLoading(false);
+            }
+          })
+          .catch((error) => {
+            console.error(error);
+            if (!ignore) setStatsLoading(false);
+          });
       } else {
-        loadResources();
+        Promise.all([
+          api.get('/products'),
+          api.get('/admin/users'),
+          api.get('/admin/orders'),
+        ])
+          .then(([productsRes, usersRes, ordersRes]) => {
+            if (!ignore) {
+              setProducts(productsRes.data);
+              setUsersList(usersRes.data);
+              setOrdersList(ordersRes.data);
+              setLoadingItems(false);
+            }
+          })
+          .catch((error) => {
+            console.error(error);
+            if (!ignore) setLoadingItems(false);
+          });
       }
     }
+    return () => {
+      ignore = true;
+    };
   }, [activeTab, isAuthenticated, user]);
 
   const handleSizeCheckbox = (size) => {
@@ -426,7 +444,7 @@ const AdminDashboard = () => {
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
                 padding: '0.5rem 1.25rem',
-                color: activeTab === tab ? '#FFF' : 'var(--color-secondary)',
+                color: activeTab === tab ? 'var(--color-primary)' : 'var(--color-secondary)',
                 backgroundColor: activeTab === tab ? 'var(--color-surface-hover)' : 'transparent',
                 border: '1px solid',
                 borderColor: activeTab === tab ? 'var(--color-border-hover)' : 'transparent',
@@ -539,7 +557,7 @@ const AdminDashboard = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group">
                     <label className="form-label" htmlFor="prodCat">Category</label>
-                    <select id="prodCat" className="form-input" value={category} onChange={(e) => setCategory(e.target.value)} style={{ backgroundColor: '#111' }}>
+                    <select id="prodCat" className="form-input" value={category} onChange={(e) => setCategory(e.target.value)}>
                       <option value="Men">Men</option>
                       <option value="Women">Women</option>
                       <option value="Kids">Kids</option>
@@ -605,7 +623,7 @@ const AdminDashboard = () => {
                       >
                         {/* Slot Label & Source Toggle */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: index === 0 ? 'var(--color-gold)' : '#fff' }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: index === 0 ? 'var(--color-gold)' : 'var(--color-primary)' }}>
                             {slot.label} {index === 0 && '(Primary)'}
                           </span>
                           
@@ -620,7 +638,7 @@ const AdminDashboard = () => {
                                   fontWeight: 800,
                                   padding: '0.2rem 0.5rem',
                                   backgroundColor: slot.inputMethod === 'upload' ? 'var(--color-surface-hover)' : 'transparent',
-                                  color: slot.inputMethod === 'upload' ? '#fff' : 'var(--color-secondary)',
+                                  color: slot.inputMethod === 'upload' ? 'var(--color-primary)' : 'var(--color-secondary)',
                                   textTransform: 'uppercase'
                                 }}
                               >
@@ -634,7 +652,7 @@ const AdminDashboard = () => {
                                   fontWeight: 800,
                                   padding: '0.2rem 0.5rem',
                                   backgroundColor: slot.inputMethod === 'url' ? 'var(--color-surface-hover)' : 'transparent',
-                                  color: slot.inputMethod === 'url' ? '#fff' : 'var(--color-secondary)',
+                                  color: slot.inputMethod === 'url' ? 'var(--color-primary)' : 'var(--color-secondary)',
                                   textTransform: 'uppercase'
                                 }}
                               >
@@ -662,7 +680,7 @@ const AdminDashboard = () => {
                                   type="button"
                                   onClick={() => handleMoveSlot(index, 'left')}
                                   disabled={index === 0}
-                                  style={{ padding: '0.35rem', border: '1px solid var(--color-border)', color: index === 0 ? '#444' : '#fff' }}
+                                  style={{ padding: '0.35rem', border: '1px solid var(--color-border)', color: index === 0 ? 'var(--color-border)' : 'var(--color-primary)' }}
                                 >
                                   <ArrowLeft size={12} />
                                 </button>
@@ -670,7 +688,7 @@ const AdminDashboard = () => {
                                   type="button"
                                   onClick={() => handleMoveSlot(index, 'right')}
                                   disabled={index === 3}
-                                  style={{ padding: '0.35rem', border: '1px solid var(--color-border)', color: index === 3 ? '#444' : '#fff' }}
+                                  style={{ padding: '0.35rem', border: '1px solid var(--color-border)', color: index === 3 ? 'var(--color-border)' : 'var(--color-primary)' }}
                                 >
                                   <ArrowRight size={12} />
                                 </button>
@@ -866,10 +884,10 @@ const AdminDashboard = () => {
                             fontSize: '0.65rem',
                             fontWeight: 800,
                             padding: '0.2rem 0.5rem',
-                            backgroundColor: u.role === 'admin' ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.05)',
-                            color: u.role === 'admin' ? 'var(--color-gold)' : '#fff',
+                            backgroundColor: u.role === 'admin' ? 'rgba(212,175,55,0.1)' : 'var(--color-surface)',
+                            color: u.role === 'admin' ? 'var(--color-gold)' : 'var(--color-secondary)',
                             border: '1px solid',
-                            borderColor: u.role === 'admin' ? 'var(--color-gold)' : 'transparent',
+                            borderColor: u.role === 'admin' ? 'var(--color-gold)' : 'var(--color-border)',
                           }}>{u.role}</span>
                         </td>
                         <td>{new Date(u.createdAt).toLocaleDateString()}</td>

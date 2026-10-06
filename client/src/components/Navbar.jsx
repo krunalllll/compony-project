@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Search, User, Heart, ShoppingBag, X, Globe, ChevronDown, Sparkles, Sun, Moon } from 'lucide-react';
+import { Menu, Search, User, Heart, ShoppingBag, X, Globe, ChevronDown, Sun, Moon } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser } from '../redux/authSlice';
+import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import MegaMenu from './MegaMenu';
 import SearchBar from './SearchBar';
@@ -13,19 +12,18 @@ import { useTheme } from '../context/ThemeContext';
 
 const ANNOUNCEMENTS = [
   '⚡ COMPLIMENTARY EXPRESS DISPATCH ON ORDERS OVER $150',
-  '🔥 DROP 03 ARCHIVE NOW AVAILABLE // EXCLUSIVE ACCESS',
+  '🔥 DROP 04 ARCHIVE NOW AVAILABLE // EXCLUSIVE ACCESS',
   '💎 REDEEM CODE "HAPPY20" FOR 20% OFF FIRST PURCHASE',
   '⭐ 4.9/5 RATED BY 15,000+ DISCERNING CLIENTS WORLDWIDE',
 ];
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const location = useLocation();
   const currentPath = location.pathname;
   const { currency, setCurrency, currencies } = useCurrency();
   const { addToast } = useToast();
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
 
   const [isTopBarOpen, setIsTopBarOpen] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -74,15 +72,7 @@ const Navbar = () => {
     } else if (user?.role === 'admin') {
       navigate('/admin-dashboard');
     } else {
-      if (window.confirm('LOG OUT OF MEMBERSHIP CIRCLE?')) {
-        dispatch(logoutUser());
-        addToast({
-          title: 'Logged Out',
-          message: 'You have safely signed out of your account',
-          type: 'info',
-        });
-        navigate('/');
-      }
+      navigate('/profile');
     }
   };
 
@@ -420,7 +410,7 @@ const Navbar = () => {
 
             {/* Wishlist */}
             <button
-              onClick={() => navigate('/checkout?tab=wishlist')}
+              onClick={() => navigate('/profile?tab=wishlist')}
               style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', position: 'relative', color: 'var(--color-primary)' }}
               title="View Wishlist"
             >

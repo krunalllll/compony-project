@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Minus, Trash2, ShoppingBag, Tag, Check, ArrowRight, ShieldCheck, Truck, Sparkles } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -19,8 +19,6 @@ const CartDrawer = ({ isOpen, onClose }) => {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discountPercent, discountAmount }
   const [couponError, setCouponError] = useState('');
-  const [orderNote, setOrderNote] = useState('');
-  const [showNoteInput, setShowNoteInput] = useState(false);
 
   // Raw Subtotal Amount
   const subtotal = cartItems.reduce((acc, item) => {
@@ -263,7 +261,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                     <ShoppingBag size={34} style={{ color: 'var(--color-secondary)' }} />
                   </div>
                   <div>
-                    <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>
+                    <h3 style={{ color: 'var(--color-primary)', fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>
                       Your Bag is Empty
                     </h3>
                     <p style={{ fontSize: '0.78rem', lineHeight: 1.4 }}>Discover our latest oversized essentials and sneakers.</p>
@@ -296,7 +294,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                           display: 'flex',
                           gap: '1rem',
                           paddingBottom: '1.25rem',
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                          borderBottom: '1px solid var(--color-border)',
                         }}
                       >
                         <div style={{ width: '80px', height: '100px', flexShrink: 0, overflow: 'hidden', border: '1px solid var(--color-border)' }}>
@@ -331,8 +329,8 @@ const CartDrawer = ({ isOpen, onClose }) => {
                               </span>
                             </div>
                             <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', color: 'var(--color-secondary)', marginTop: '0.35rem', fontWeight: 700 }}>
-                              <span>SIZE: <strong style={{ color: '#FFF' }}>{item.size}</strong></span>
-                              {item.color && <span>COLOR: <strong style={{ color: '#FFF' }}>{item.color}</strong></span>}
+                              <span>SIZE: <strong style={{ color: 'var(--color-primary)' }}>{item.size}</strong></span>
+                              {item.color && <span>COLOR: <strong style={{ color: 'var(--color-primary)' }}>{item.color}</strong></span>}
                             </div>
                           </div>
 
@@ -348,7 +346,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                               <button
                                 onClick={() => handleQtyChange(item, -1)}
                                 disabled={item.quantity <= 1}
-                                style={{ padding: '0.3rem 0.6rem', color: item.quantity <= 1 ? '#444' : '#fff' }}
+                                style={{ padding: '0.3rem 0.6rem', color: item.quantity <= 1 ? 'var(--color-secondary)' : 'var(--color-primary)' }}
                               >
                                 <Minus size={11} />
                               </button>
@@ -357,7 +355,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                               </span>
                               <button
                                 onClick={() => handleQtyChange(item, 1)}
-                                style={{ padding: '0.3rem 0.6rem' }}
+                                style={{ padding: '0.3rem 0.6rem', color: 'var(--color-primary)' }}
                               >
                                 <Plus size={11} />
                               </button>
@@ -439,7 +437,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                             padding: '0.5rem 0.75rem',
                             backgroundColor: 'var(--color-bg-alt)',
                             border: '1px solid var(--color-border)',
-                            color: '#FFF',
+                            color: 'var(--color-primary)',
                             fontSize: '0.75rem',
                             fontWeight: 700,
                             textTransform: 'uppercase',
@@ -450,7 +448,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                           style={{
                             padding: '0.5rem 1rem',
                             backgroundColor: 'var(--color-primary)',
-                            color: '#000',
+                            color: 'var(--color-bg-alt)',
                             fontSize: '0.75rem',
                             fontWeight: 800,
                             letterSpacing: '0.05em',
@@ -514,7 +512,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 900, letterSpacing: '0.05em', color: '#FFF', marginTop: '0.2rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 900, letterSpacing: '0.05em', color: 'var(--color-primary)', marginTop: '0.2rem' }}>
                     <span>TOTAL</span>
                     <span>{formatPrice(finalTotal)}</span>
                   </div>

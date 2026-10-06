@@ -18,7 +18,7 @@ const saveLocalWishlist = (items) => {
   }
 };
 
-export const fetchWishlist = createAsyncThunk('wishlist/fetch', async (_, { rejectWithValue }) => {
+export const fetchWishlist = createAsyncThunk('wishlist/fetch', async () => {
   const token = localStorage.getItem('token');
   if (!token) {
     return getLocalWishlist();
@@ -28,12 +28,12 @@ export const fetchWishlist = createAsyncThunk('wishlist/fetch', async (_, { reje
     const prods = response.data.products || [];
     saveLocalWishlist(prods);
     return prods;
-  } catch (error) {
+  } catch {
     return getLocalWishlist();
   }
 });
 
-export const addToWishlistAsync = createAsyncThunk('wishlist/add', async (productOrId, { rejectWithValue }) => {
+export const addToWishlistAsync = createAsyncThunk('wishlist/add', async (productOrId) => {
   const token = localStorage.getItem('token');
   const productId = typeof productOrId === 'object' ? productOrId._id : productOrId;
 
@@ -60,7 +60,7 @@ export const addToWishlistAsync = createAsyncThunk('wishlist/add', async (produc
   return updated;
 });
 
-export const removeFromWishlistAsync = createAsyncThunk('wishlist/remove', async (productId, { rejectWithValue }) => {
+export const removeFromWishlistAsync = createAsyncThunk('wishlist/remove', async (productId) => {
   const token = localStorage.getItem('token');
 
   if (token) {

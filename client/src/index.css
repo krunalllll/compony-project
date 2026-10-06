@@ -325,3 +325,40 @@ button {
 .category-card-hover:hover .category-card-img {
   transform: scale(1.08);
 }
+
+/* Streetwear Running Marquee Ticker */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+  display: flex;
+  user-select: none;
+}
+
+.marquee-content {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+  animation: marquee 24s linear infinite;
+  flex-shrink: 0;
+}
+
+.marquee-content:hover {
+  animation-play-state: paused;
+}
+
+.editorial-card-hover {
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
+}
+.editorial-card-hover:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-premium);
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ShoppingCart, Star, Heart, Check } from 'lucide-react';
+import { X, ShoppingCart, Star, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';

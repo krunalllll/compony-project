@@ -8,34 +8,32 @@ const ImageCarousel = ({ children }) => {
   const [activeDot, setActiveDot] = useState(0);
   const [totalDots, setTotalDots] = useState(3);
 
-  const checkScroll = () => {
-    if (carouselRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
-      setShowLeft(scrollLeft > 5);
-      setShowRight(scrollLeft < scrollWidth - clientWidth - 5);
-      
-      // Calculate dot index (0 to totalDots - 1)
-      if (scrollWidth > clientWidth) {
-        const percentage = scrollLeft / (scrollWidth - clientWidth);
-        const index = Math.round(percentage * (totalDots - 1));
-        setActiveDot(index);
-      }
-    }
-  };
-
   useEffect(() => {
     const el = carouselRef.current;
-    if (el) {
-      el.addEventListener('scroll', checkScroll);
-      // Run initial check
-      checkScroll();
-      
-      // Calculate total dots based on scrollWidth and clientWidth
-      const dotsCount = Math.ceil(el.scrollWidth / el.clientWidth) || 3;
-      setTotalDots(Math.max(dotsCount, 2));
-    }
+    if (!el) return;
+
+    // Calculate total dots based on scrollWidth and clientWidth
+    const dotsCount = Math.ceil(el.scrollWidth / el.clientWidth) || 3;
+    const computedDots = Math.max(dotsCount, 2);
+    setTotalDots(computedDots);
+
+    const onScroll = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setShowLeft(scrollLeft > 5);
+      setShowRight(scrollLeft < scrollWidth - clientWidth - 5);
+
+      if (scrollWidth > clientWidth && computedDots > 1) {
+        const percentage = scrollLeft / (scrollWidth - clientWidth);
+        const index = Math.round(percentage * (computedDots - 1));
+        setActiveDot(index);
+      }
+    };
+
+    el.addEventListener('scroll', onScroll);
+    onScroll();
+
     return () => {
-      if (el) el.removeEventListener('scroll', checkScroll);
+      el.removeEventListener('scroll', onScroll);
     };
   }, [children]);
 

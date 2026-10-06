@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ShoppingCart, Star, Heart, ArrowLeft, Check, Share2, Ruler, Sparkles, Truck, ShieldCheck, Flame, Clock } from 'lucide-react';
+import { ShoppingCart, Star, Heart, ArrowLeft, Check, Share2, Ruler, Truck, Flame, Clock } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
@@ -395,7 +395,7 @@ const ProductDetails = () => {
                 <span>•</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--color-gold)' }}>
                   <Star size={12} fill="var(--color-gold)" stroke="none" />
-                  <span style={{ color: '#fff', fontWeight: 800 }}>{product.ratings || 4.5} ({product.reviewsCount || 0} reviews)</span>
+                  <span style={{ color: 'var(--color-primary)', fontWeight: 800 }}>{product.ratings || 4.5} ({product.reviewsCount || 0} reviews)</span>
                 </div>
               </div>
             </div>
@@ -415,7 +415,7 @@ const ProductDetails = () => {
                   </span>
                 </>
               ) : (
-                <span style={{ fontSize: '2rem', fontWeight: 900 }}>{formatPrice(product.price)}</span>
+                <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-primary)' }}>{formatPrice(product.price)}</span>
               )}
             </div>
 
@@ -428,7 +428,7 @@ const ProductDetails = () => {
             {product.colors && product.colors.length > 0 && (
               <div>
                 <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>
-                  Selected Color: <strong style={{ color: '#FFF' }}>{selectedColor}</strong>
+                  Selected Color: <strong style={{ color: 'var(--color-primary)' }}>{selectedColor}</strong>
                 </span>
                 <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                   {product.colors.map((color) => (
@@ -440,8 +440,9 @@ const ProductDetails = () => {
                         fontSize: '0.72rem',
                         fontWeight: 700,
                         border: '1px solid',
-                        borderColor: selectedColor === color ? '#fff' : 'var(--color-border)',
+                        borderColor: selectedColor === color ? 'var(--color-primary)' : 'var(--color-border)',
                         backgroundColor: selectedColor === color ? 'var(--color-surface-hover)' : 'var(--color-bg-alt)',
+                        color: 'var(--color-primary)',
                         textTransform: 'uppercase',
                         cursor: 'pointer',
                         transition: '0.2s',
@@ -459,7 +460,7 @@ const ProductDetails = () => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em' }}>
-                    Size: <strong style={{ color: '#FFF' }}>{selectedSize}</strong>
+                    Size: <strong style={{ color: 'var(--color-primary)' }}>{selectedSize}</strong>
                   </span>
                   
                   {/* Size Guide Trigger */}
@@ -492,8 +493,9 @@ const ProductDetails = () => {
                         fontSize: '0.75rem',
                         fontWeight: 800,
                         border: '1px solid',
-                        borderColor: selectedSize === size ? '#fff' : 'var(--color-border)',
+                        borderColor: selectedSize === size ? 'var(--color-primary)' : 'var(--color-border)',
                         backgroundColor: selectedSize === size ? 'var(--color-surface-hover)' : 'var(--color-bg-alt)',
+                        color: 'var(--color-primary)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -548,7 +550,7 @@ const ProductDetails = () => {
                   className="btn-secondary"
                   style={{
                     padding: '1.1rem',
-                    color: isWishlisted ? 'var(--color-accent)' : '#fff',
+                    color: isWishlisted ? 'var(--color-accent)' : 'var(--color-primary)',
                     borderColor: isWishlisted ? 'var(--color-accent)' : 'var(--color-border)',
                   }}
                   title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
@@ -616,7 +618,7 @@ const ProductDetails = () => {
                 style={{
                   fontSize: '0.85rem',
                   fontWeight: activeTab === tab.id ? 800 : 600,
-                  color: activeTab === tab.id ? '#fff' : 'var(--color-secondary)',
+                  color: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-secondary)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                   position: 'relative',
@@ -643,7 +645,7 @@ const ProductDetails = () => {
               <div style={{ fontSize: '0.88rem', color: 'var(--color-secondary)', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <p>{product.description}</p>
                 <p>Designed with streetwear culture and daily utility in mind. Every garment features careful stitching alignments, pre-shrunk heavyweight structures, and minimal premium branding elements to coordinate with your wardrobe essentials.</p>
-                <h4 style={{ color: '#fff', fontSize: '0.9rem', fontWeight: 800, marginTop: '0.5rem', textTransform: 'uppercase' }}>Key Details:</h4>
+                <h4 style={{ color: 'var(--color-primary)', fontSize: '0.9rem', fontWeight: 800, marginTop: '0.5rem', textTransform: 'uppercase' }}>Key Details:</h4>
                 <ul style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   <li>Heavyweight weave grading for premium posture structure.</li>
                   <li>Deep ribbed cuffs and hem linings preventing outline expansions.</li>
@@ -665,7 +667,7 @@ const ProductDetails = () => {
                       { key: 'Branding', val: 'High-density matte print / clean tone-on-tone embroidery' },
                     ].map((spec, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                        <td style={{ padding: '0.9rem 0', fontWeight: 800, color: '#fff', textTransform: 'uppercase', fontSize: '0.75rem', width: '180px' }}>{spec.key}</td>
+                        <td style={{ padding: '0.9rem 0', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', fontSize: '0.75rem', width: '180px' }}>{spec.key}</td>
                         <td style={{ padding: '0.9rem 0', color: 'var(--color-secondary)' }}>{spec.val}</td>
                       </tr>
                     ))}
@@ -677,11 +679,11 @@ const ProductDetails = () => {
             {activeTab === 'additional' && (
               <div style={{ fontSize: '0.85rem', color: 'var(--color-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
-                  <h4 style={{ color: '#fff', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Shipping & Dispatch</h4>
+                  <h4 style={{ color: 'var(--color-primary)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Shipping & Dispatch</h4>
                   <p>All items in stock ship from our central logistic center. Deliveries arrive within 2-3 business days. We provide free return shipping pickups for Apex VIP Circle members. Return claims must be filed within 14 days of delivery in original unused condition.</p>
                 </div>
                 <div>
-                  <h4 style={{ color: '#fff', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Sizing & Tailoring</h4>
+                  <h4 style={{ color: 'var(--color-primary)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Sizing & Tailoring</h4>
                   <p>Fits boxy and slightly oversized. If you prefer a regular fit, we recommend selecting one size smaller than your standard sizing. Cap accessories feature adjustable metal slider strapbacks fitting up to 62cm.</p>
                 </div>
               </div>
@@ -748,7 +750,7 @@ const ProductDetails = () => {
                       </form>
                     ) : (
                       <div style={{ fontSize: '0.78rem', color: 'var(--color-secondary)' }}>
-                        You must be <Link to="/login" style={{ color: '#fff', textDecoration: 'underline', fontWeight: 700 }}>Logged In</Link> to submit a product review.
+                        You must be <Link to="/login" style={{ color: 'var(--color-primary)', textDecoration: 'underline', fontWeight: 700 }}>Logged In</Link> to submit a product review.
                       </div>
                     )}
                   </div>
@@ -758,7 +760,7 @@ const ProductDetails = () => {
                     <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>Customer Feedback</h4>
                     {product.reviews && product.reviews.length > 0 ? (
                       product.reviews.map((rev) => (
-                        <div key={rev._id} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '1rem' }}>
+                        <div key={rev._id} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase' }}>{rev.name}</span>
                             <span style={{ fontSize: '0.68rem', color: 'var(--color-secondary)' }}>{new Date(rev.createdAt).toLocaleDateString()}</span>
@@ -846,7 +848,7 @@ const ProductDetails = () => {
               bottom: 0,
               left: 0,
               right: 0,
-              backgroundColor: 'rgba(18, 18, 22, 0.95)',
+              backgroundColor: 'var(--color-bg)',
               backdropFilter: 'blur(16px)',
               WebkitBackdropFilter: 'blur(16px)',
               borderTop: '1px solid var(--color-border)',
@@ -855,7 +857,7 @@ const ProductDetails = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              boxShadow: '0 -10px 30px rgba(0, 0, 0, 0.7)',
+              boxShadow: '0 -10px 30px rgba(0, 0, 0, 0.15)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -863,7 +865,7 @@ const ProductDetails = () => {
                 <img src={activeImage} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#FFF' }}>{product.name}</h4>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)' }}>{product.name}</h4>
                 <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-accent)' }}>
                   {formatPrice(discountPrice || product.price)}
                 </div>
@@ -878,7 +880,7 @@ const ProductDetails = () => {
                   style={{
                     backgroundColor: 'var(--color-surface)',
                     border: '1px solid var(--color-border)',
-                    color: '#FFF',
+                    color: 'var(--color-primary)',
                     padding: '0.55rem 1rem',
                     fontSize: '0.75rem',
                     fontWeight: 800,

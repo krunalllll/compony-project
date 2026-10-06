@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail, User, AlertTriangle } from 'lucide-react';
 import { signupUser, clearAuthError } from '../redux/authSlice';
+import api from '../services/api';
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -41,7 +42,7 @@ const Signup = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = `${api.defaults.baseURL}/auth/google`;
   };
 
   return (

@@ -148,13 +148,16 @@ const Sidebar = ({ isOpen, onClose }) => {
                     <ShieldCheck size={14} style={{ color: 'var(--color-gold)' }} />
                     <span style={{ color: 'var(--color-gold)', letterSpacing: '0.05em' }}>VIP PRICE MEMBERSHIP ACTIVE</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', width: '100%' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
+                    <Link to="/profile" onClick={handleLinkClick} className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.7rem', flex: 1, textTransform: 'uppercase', fontWeight: 800, textAlign: 'center' }}>
+                      MY PROFILE
+                    </Link>
                     {user.role === 'admin' && (
-                      <Link to="/admin-dashboard" onClick={handleLinkClick} className="btn-accent" style={{ padding: '0.5rem 1rem', fontSize: '0.7rem', flex: 1, color: '#fff', textTransform: 'uppercase', fontWeight: 800, textAlign: 'center' }}>
+                      <Link to="/admin-dashboard" onClick={handleLinkClick} className="btn-accent" style={{ padding: '0.5rem 1rem', fontSize: '0.7rem', flex: 1, color: 'var(--color-bg-alt)', textTransform: 'uppercase', fontWeight: 800, textAlign: 'center' }}>
                         Admin Dashboard
                       </Link>
                     )}
-                    <button onClick={handleLogout} className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.7rem', flex: user.role === 'admin' ? 0.5 : 1, textTransform: 'uppercase', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+                    <button onClick={handleLogout} className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.7rem', flex: user.role === 'admin' ? 0.7 : 1, textTransform: 'uppercase', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
                       <LogOut size={14} /> LOGOUT
                     </button>
                   </div>

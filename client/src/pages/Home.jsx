@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, ShieldCheck, Truck, RotateCcw, Lock, Headphones, Star, Tag, Play, Pause, Copy, Check, Plus, HelpCircle } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, ShieldCheck, Truck, RotateCcw, Lock, Headphones, Tag, Play, Pause, Copy, Check, Plus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import ProductCard from '../components/ProductCard';
@@ -11,7 +11,6 @@ const Home = () => {
   const { addToast } = useToast();
 
   const [allProducts, setAllProducts] = useState([]);
-  const [displayedProducts, setDisplayedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ALL');
 
@@ -30,37 +29,33 @@ const Home = () => {
   // Coupon copy feedback
   const [copiedCoupon, setCopiedCoupon] = useState(false);
 
-  // Newsletter feedback
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
-
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState(null);
 
   const slides = [
     {
-      title: 'DROP 01 // OVERSIZED CORE',
-      subtitle: 'HEAVYWEIGHT APPAREL FOR DAILY UTILITY',
+      title: 'DROP 04 // OVERSIZED ARCHIVE',
+      subtitle: '480GSM FRENCH TERRY COTTON & ARTICULATED TACTICAL UTILITY',
       category: 'MEN',
       link: '/men',
-      image: 'https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=1600&q=80',
-      tag: 'SEASON DROP 01',
+      image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=1920&q=80',
+      tag: 'NEW DROP ARCHIVE',
     },
     {
-      title: 'FUTURISTIC STREET UTILITY',
-      subtitle: 'REDEFINED APPAREL FEATURING GLASSMORPHIC DETAILS',
+      title: 'CYBER TECHWEAR & CROPPED SILHOUETTES',
+      subtitle: 'REDEFINED STRUCTURAL CODES FOR MINIMALIST URBAN BRUTALISM',
       category: 'WOMEN',
       link: '/women',
-      image: 'https://images.unsplash.com/photo-1509319117193-57bab727e09d?auto=format&fit=crop&w=1600&q=80',
-      tag: 'TECHWEAR CAPSULE',
+      image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1920&q=80',
+      tag: 'WOMEN CAPSULE 04',
     },
     {
-      title: 'APEX SATELLITE KICKS',
-      subtitle: 'CHUNKY PLATFORM SOLES AND REINFORCED EVA FOAM',
+      title: 'FUTURISTIC SATELLITE KICKS',
+      subtitle: 'CHUNKY SCULPTED EVA SOLES WITH ITALIAN LEATHER UPPERS',
       category: 'SNEAKERS',
       link: '/sneakers',
-      image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=1600&q=80',
-      tag: 'FOOTWEAR RELEASE',
+      image: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=1920&q=80',
+      tag: 'LIMITED FOOTWEAR RUN',
     },
   ];
 
@@ -70,7 +65,6 @@ const Home = () => {
       try {
         const response = await api.get('/products');
         setAllProducts(response.data || []);
-        setDisplayedProducts(response.data.slice(0, 8));
         setLoading(false);
       } catch (error) {
         console.error('Error loading products:', error);
@@ -80,21 +74,24 @@ const Home = () => {
     fetchProducts();
   }, []);
 
-  // Filter products by tab
-  useEffect(() => {
+  // Filter products by tab using useMemo to avoid cascading renders
+  const displayedProducts = useMemo(() => {
     if (activeTab === 'ALL') {
-      setDisplayedProducts(allProducts.slice(0, 8));
+      return allProducts.slice(0, 16);
     } else if (activeTab === 'MEN') {
-      setDisplayedProducts(allProducts.filter((p) => p.category === 'Men').slice(0, 8));
+      return allProducts.filter((p) => p.category && p.category.toLowerCase() === 'men').slice(0, 16);
     } else if (activeTab === 'WOMEN') {
-      setDisplayedProducts(allProducts.filter((p) => p.category === 'Women').slice(0, 8));
+      return allProducts.filter((p) => p.category && p.category.toLowerCase() === 'women').slice(0, 16);
+    } else if (activeTab === 'KIDS') {
+      return allProducts.filter((p) => p.category && p.category.toLowerCase() === 'kids').slice(0, 16);
     } else if (activeTab === 'SNEAKERS') {
-      setDisplayedProducts(allProducts.filter((p) => p.category === 'Sneakers').slice(0, 8));
+      return allProducts.filter((p) => p.category && p.category.toLowerCase() === 'sneakers').slice(0, 16);
     } else if (activeTab === 'UNDER_100') {
-      setDisplayedProducts(allProducts.filter((p) => p.price < 100).slice(0, 8));
+      return allProducts.filter((p) => p.price < 100).slice(0, 16);
     } else if (activeTab === 'SALE') {
-      setDisplayedProducts(allProducts.filter((p) => p.discount > 0).slice(0, 8));
+      return allProducts.filter((p) => p.discount > 0).slice(0, 16);
     }
+    return allProducts.slice(0, 16);
   }, [activeTab, allProducts]);
 
   // Slideshow auto-play interval
@@ -142,17 +139,6 @@ const Home = () => {
       type: 'success',
     });
     setTimeout(() => setCopiedCoupon(false), 3000);
-  };
-
-  const handleNewsletterSubmit = (e) => {
-    e.preventDefault();
-    if (!newsletterEmail) return;
-    setNewsletterSubscribed(true);
-    addToast({
-      title: 'Subscribed to Apex Drops',
-      message: 'Welcome voucher code WELCOME15 unlocked for 15% off!',
-      type: 'success',
-    });
   };
 
   const faqItems = [
@@ -249,6 +235,7 @@ const Home = () => {
               textTransform: 'uppercase',
               lineHeight: 0.95,
               letterSpacing: '-0.02em',
+              color: '#FFFFFF',
             }}
           >
             {slides[currentSlide].title}
@@ -261,7 +248,7 @@ const Home = () => {
             transition={{ delay: 0.4 }}
             style={{
               fontSize: 'clamp(0.85rem, 1.8vw, 1.05rem)',
-              color: 'var(--color-secondary)',
+              color: 'rgba(255, 255, 255, 0.85)',
               fontWeight: 600,
               letterSpacing: '0.05em',
               textTransform: 'uppercase',
@@ -391,6 +378,51 @@ const Home = () => {
         </button>
       </div>
 
+      {/* STREETWEAR MARQUEE TICKER TAPE */}
+      <div
+        style={{
+          backgroundColor: 'var(--color-primary)',
+          color: 'var(--color-bg)',
+          padding: '0.85rem 0',
+          borderBottom: '1px solid var(--color-border)',
+          overflow: 'hidden',
+          display: 'flex',
+        }}
+      >
+        <div className="marquee-container" style={{ width: '100%' }}>
+          <div className="marquee-content" style={{ fontSize: '0.78rem', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+            <span>⚡ FALL/WINTER 2026 DROP LIVE</span>
+            <span>•</span>
+            <span>480GSM HEAVYWEIGHT FRENCH TERRY</span>
+            <span>•</span>
+            <span>CRAFTED IN PORTUGAL</span>
+            <span>•</span>
+            <span>LIMITED PRODUCTION RUNS</span>
+            <span>•</span>
+            <span>COMPLIMENTARY EXPRESS GLOBAL SHIPPING</span>
+            <span>•</span>
+            <span>APEX VIP RAW-COST ACCESS</span>
+            <span>•</span>
+            <span>ZERO COMPROMISE UTILITY DESIGN</span>
+            <span>•</span>
+            <span>⚡ FALL/WINTER 2026 DROP LIVE</span>
+            <span>•</span>
+            <span>480GSM HEAVYWEIGHT FRENCH TERRY</span>
+            <span>•</span>
+            <span>CRAFTED IN PORTUGAL</span>
+            <span>•</span>
+            <span>LIMITED PRODUCTION RUNS</span>
+            <span>•</span>
+            <span>COMPLIMENTARY EXPRESS GLOBAL SHIPPING</span>
+            <span>•</span>
+            <span>APEX VIP RAW-COST ACCESS</span>
+            <span>•</span>
+            <span>ZERO COMPROMISE UTILITY DESIGN</span>
+            <span>•</span>
+          </div>
+        </div>
+      </div>
+
       {/* INTERACTIVE FLASH SALE & LIVE COUNTDOWN SECTION */}
       <section style={{ padding: '4.5rem 0', backgroundColor: 'var(--color-bg-alt)', position: 'relative', overflow: 'hidden', borderBottom: '1px solid var(--color-border)' }}>
         <div
@@ -500,12 +532,12 @@ const Home = () => {
         </div>
       </section>
 
-      {/* TRENDING CATEGORIES 3-COLUMN HERO TILES */}
+      {/* TRENDING CATEGORIES 4-COLUMN HERO TILES */}
       <section style={{ padding: '5rem 0', backgroundColor: 'var(--color-bg)' }}>
         <div className="container">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '3.5rem' }}>
             <span style={{ color: 'var(--color-accent)', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.2em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <Sparkles size={12} /> CURATED RELEASES
+              <Sparkles size={12} /> CURATED ARCHIVE
             </span>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '0.4rem' }}>
               EXPLORE OUR ARCHIVE
@@ -515,14 +547,15 @@ const Home = () => {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
               gap: '1.5rem',
             }}
           >
             {[
-              { name: 'MEN', subtitle: 'Heavyweight Boxy Fits', img: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600', link: '/men' },
-              { name: 'WOMEN', subtitle: 'Techwear & Cropped Hoodies', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600', link: '/women' },
-              { name: 'SNEAKERS', subtitle: 'Custom EVA Midsoles & Platforms', img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600', link: '/sneakers' },
+              { name: 'MEN', subtitle: 'Heavyweight Boxy Fits', img: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80', link: '/men' },
+              { name: 'WOMEN', subtitle: 'Techwear & Parachute Cuts', img: 'https://images.unsplash.com/photo-1534126511673-b6899657816a?auto=format&fit=crop&w=800&q=80', link: '/women' },
+              { name: 'SNEAKERS', subtitle: 'Chunky Runners & Platforms', img: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80', link: '/sneakers' },
+              { name: 'KIDS', subtitle: 'Urban Junior Mini Sets', img: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?auto=format&fit=crop&w=800&q=80', link: '/kids' },
             ].map((cat, i) => (
               <Link
                 to={cat.link}
@@ -551,7 +584,7 @@ const Home = () => {
                   <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                     {cat.subtitle}
                   </span>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px', color: '#FFFFFF' }}>
                     {cat.name}
                   </h3>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: '#FFF', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
@@ -560,6 +593,81 @@ const Home = () => {
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* EDITORIAL LOOKBOOK CAPSULE SHOWCASE */}
+      <section style={{ padding: '6rem 0', backgroundColor: 'var(--color-bg-alt)', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
+        <div className="container">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '4rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-accent)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                ARCHIVAL STUDY // FW26
+              </span>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 4vw, 3.2rem)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.05, letterSpacing: '0.02em', color: 'var(--color-primary)' }}>
+                MINIMALIST SILHOUETTES. <br />HEAVYWEIGHT DRAPE.
+              </h2>
+              <p style={{ color: 'var(--color-secondary)', fontSize: '0.9rem', lineHeight: 1.7, fontWeight: 500 }}>
+                Every garment begins with bespoke yarn development. We source 480GSM loopback cotton knitted tightly on vintage circular looms, then garment-dye with non-toxic industrial minerals. No shortcuts. Built to last a lifetime.
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
+                <div>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 900, display: 'block', color: 'var(--color-primary)' }}>480 GSM</span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--color-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pre-Shrunk Fleece</span>
+                </div>
+                <div>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 900, display: 'block', color: 'var(--color-primary)' }}>100%</span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--color-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Organic Cotton</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                <Link to="/men" className="btn-primary" style={{ padding: '0.9rem 2rem' }}>
+                  EXPLORE CAPSULE <ArrowRight size={15} />
+                </Link>
+                <Link to="/sneakers" className="btn-secondary" style={{ padding: '0.9rem 2rem' }}>
+                  VIEW FOOTWEAR
+                </Link>
+              </div>
+            </div>
+
+            {/* Lookbook Dual Photo Collage */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '1.25rem', alignItems: 'center' }}>
+              <div style={{ height: '480px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }} className="editorial-card-hover">
+                <img
+                  src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=800&q=80"
+                  alt="Core Lookbook"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div style={{ position: 'absolute', bottom: '16px', left: '16px', backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', padding: '5px 12px', fontSize: '0.65rem', fontWeight: 800, color: '#FFF', letterSpacing: '0.1em' }}>
+                  CORE HOODIE // 01
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div style={{ height: '230px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }} className="editorial-card-hover">
+                  <img
+                    src="https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80"
+                    alt="Footwear Lookbook"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  <div style={{ position: 'absolute', bottom: '12px', left: '12px', backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', padding: '5px 12px', fontSize: '0.65rem', fontWeight: 800, color: '#FFF', letterSpacing: '0.1em' }}>
+                    RETRO RUNNER V1
+                  </div>
+                </div>
+                <div style={{ height: '230px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }} className="editorial-card-hover">
+                  <img
+                    src="https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=800&q=80"
+                    alt="Cargo Lookbook"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  <div style={{ position: 'absolute', bottom: '12px', left: '12px', backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', padding: '5px 12px', fontSize: '0.65rem', fontWeight: 800, color: '#FFF', letterSpacing: '0.1em' }}>
+                    TACTICAL CARGO
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -583,6 +691,7 @@ const Home = () => {
                 { id: 'ALL', label: 'ALL DROPS' },
                 { id: 'MEN', label: 'MEN' },
                 { id: 'WOMEN', label: 'WOMEN' },
+                { id: 'KIDS', label: 'KIDS' },
                 { id: 'SNEAKERS', label: 'SNEAKERS' },
                 { id: 'UNDER_100', label: 'UNDER $100' },
                 { id: 'SALE', label: 'ON SALE' },
@@ -599,7 +708,7 @@ const Home = () => {
                     border: '1px solid',
                     borderColor: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-border)',
                     backgroundColor: activeTab === tab.id ? 'var(--color-primary)' : 'transparent',
-                    color: activeTab === tab.id ? '#000000' : 'var(--color-secondary)',
+                    color: activeTab === tab.id ? 'var(--color-bg)' : 'var(--color-secondary)',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                   }}
@@ -789,6 +898,7 @@ const Home = () => {
             style={{
               height: '380px',
               backgroundColor: '#000',
+              color: '#FFFFFF',
               border: '1px solid rgba(212,175,55,0.3)',
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.9)',
               padding: '2.5rem',

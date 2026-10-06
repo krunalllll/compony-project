@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, ArrowRight, Check, Sparkles } from 'lucide-react';
+import { Mail, ArrowRight, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 
@@ -43,6 +43,7 @@ const Footer = () => {
     <footer
       style={{
         backgroundColor: '#0A0A0C',
+        color: '#FFFFFF',
         borderTop: '1px solid var(--color-border)',
         padding: '5rem 2rem 2rem 2rem',
         marginTop: 'auto',
@@ -122,7 +123,7 @@ const Footer = () => {
             Customer Care
           </h3>
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
-            <li><Link to="/checkout" style={{ transition: 'color 0.2s' }}>Orders & Tracking</Link></li>
+            <li><Link to="/profile?tab=orders" style={{ transition: 'color 0.2s' }}>Orders & Tracking</Link></li>
             <li><Link to="/men" style={{ transition: 'color 0.2s' }}>Shipping & Dispatch</Link></li>
             <li><Link to="/men" style={{ transition: 'color 0.2s' }}>Returns & Exchanges</Link></li>
             <li><a href="mailto:support@happystore.com" style={{ transition: 'color 0.2s' }}>24/7 Concierge Support</a></li>

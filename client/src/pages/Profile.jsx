@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { User, ShoppingBag, Heart, CreditCard, CheckCircle, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, Heart, CreditCard, CheckCircle, LogOut } from 'lucide-react';
 import api from '../services/api';
 import ProductCard from '../components/ProductCard';
 import { fetchCart, clearCart } from '../redux/cartSlice';
 import { fetchWishlist } from '../redux/wishlistSlice';
+import { logoutUser } from '../redux/authSlice';
 import { useCurrency } from '../context/CurrencyContext';
+
+const getImageUrl = (image) => {
+  if (!image) return '';
+  if (typeof image === 'string') return image;
+  return image.url || '';
+};
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -21,16 +28,26 @@ const loadRazorpayScript = () => {
 
 const Profile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { formatPrice } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
-  const showCheckoutParam = searchParams.get('checkout') === 'true';
+  const isCheckoutRoute = location.pathname === '/checkout' || searchParams.get('checkout') === 'true';
+  const tabParam = isCheckoutRoute ? 'checkout' : searchParams.get('tab');
   const { user, isAuthenticated, checkingAuth } = useSelector((state) => state.auth);
   const cartItems = useSelector((state) => state.cart.items);
   const wishlistProducts = useSelector((state) => state.wishlist.products);
 
-  const initialTab = searchParams.get('tab') || (cartItems.length > 0 ? 'checkout' : 'orders');
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeTab, setActiveTab] = useState(
+    tabParam || (cartItems.length > 0 ? 'checkout' : 'orders')
+  );
+  const [prevTabParam, setPrevTabParam] = useState(tabParam);
+
+  if (tabParam && tabParam !== prevTabParam) {
+    setPrevTabParam(tabParam);
+    setActiveTab(tabParam);
+  }
+
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
 
@@ -57,12 +74,6 @@ const Profile = () => {
       navigate('/login');
     }
   }, [isAuthenticated, checkingAuth, navigate, activeTab]);
-
-  useEffect(() => {
-    if (showCheckoutParam) {
-      setActiveTab('checkout');
-    }
-  }, [showCheckoutParam]);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -118,7 +129,7 @@ const Profile = () => {
         quantity: item.quantity,
         size: item.size,
         color: item.color,
-        image: item.productId.images[0],
+        image: getImageUrl(item.productId.images?.[0]),
       }));
 
       const address = { street, city, state, zipCode, country };
@@ -218,7 +229,7 @@ const Profile = () => {
         quantity: item.quantity,
         size: item.size,
         color: item.color,
-        image: item.productId.images[0],
+        image: getImageUrl(item.productId.images?.[0]),
       }));
 
       const address = { street, city, state, zipCode, country };
@@ -289,11 +300,24 @@ const Profile = () => {
               style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--color-border)' }}
             />
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {user.name}
                 </h1>
                 <span className="badge-member">BLACK CARD</span>
+                <button
+                  onClick={() => {
+                    if (window.confirm('LOG OUT OF ACCOUNT?')) {
+                      dispatch(logoutUser());
+                      navigate('/');
+                    }
+                  }}
+                  className="btn-secondary"
+                  style={{ padding: '0.25rem 0.65rem', fontSize: '0.65rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '3px' }}
+                  title="Sign out of account"
+                >
+                  <LogOut size={11} /> LOGOUT
+                </button>
               </div>
               <p style={{ color: 'var(--color-secondary)', fontSize: '0.8rem', marginTop: '0.25rem', fontWeight: 700 }}>
                 {user.email.toUpperCase()} • APEX CUSTOMER
@@ -308,7 +332,7 @@ const Profile = () => {
             textAlign: 'right',
           }}>
             <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-gold)', letterSpacing: '0.1em', display: 'block', textTransform: 'uppercase' }}>ESTIMATED SAVINGS</span>
-            <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-gold)', fontFamily: 'var(--font-display)', display: 'block', marginTop: '0.25rem' }}>$142.50</span>
+            <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-gold)', fontFamily: 'var(--font-display)', display: 'block', marginTop: '0.25rem' }}>{formatPrice(142.50)}</span>
           </div>
         </div>
 
@@ -331,7 +355,7 @@ const Profile = () => {
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
                 padding: '0.5rem 1rem',
-                color: activeTab === tab.id ? '#FFF' : 'var(--color-secondary)',
+                color: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-secondary)',
                 borderBottom: activeTab === tab.id ? '2px solid var(--color-primary)' : 'none',
               }}
             >
@@ -361,7 +385,7 @@ const Profile = () => {
                 textAlign: 'center',
               }}>
                 <ShoppingBag size={40} style={{ strokeWidth: 1.5, marginBottom: '1rem' }} />
-                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFF' }}>NO TRANSACTIONS RECORDED YET</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)' }}>NO TRANSACTIONS RECORDED YET</span>
                 <p style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>Add streetwear products to your bag and confirm checkout to register orders.</p>
               </div>
             ) : (
@@ -421,11 +445,11 @@ const Profile = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                       {order.products.map((item, idx) => (
                         <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                          <img src={item.image} alt={item.name} style={{ width: '45px', height: '55px', objectFit: 'cover', border: '1px solid var(--color-border)' }} />
+                          <img src={getImageUrl(item.image)} alt={item.name} style={{ width: '45px', height: '55px', objectFit: 'cover', border: '1px solid var(--color-border)' }} />
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase' }}>{item.name}</div>
                             <div style={{ fontSize: '0.72rem', color: 'var(--color-secondary)', fontWeight: 700, marginTop: '0.2rem' }}>
-                              SIZE: {item.size} • QTY: {item.quantity} • PRICE: ${item.price}
+                              SIZE: {item.size} • QTY: {item.quantity} • PRICE: {formatPrice(item.price)}
                             </div>
                           </div>
                         </div>
@@ -454,7 +478,7 @@ const Profile = () => {
                 textAlign: 'center',
               }}>
                 <Heart size={40} style={{ strokeWidth: 1.5, marginBottom: '1rem' }} />
-                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFF' }}>YOUR WISHLIST IS EMPTY</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)' }}>YOUR WISHLIST IS EMPTY</span>
                 <p style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>Products you save using the heart icons will collect here.</p>
               </div>
             ) : (
@@ -548,12 +572,13 @@ const Profile = () => {
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '1.5rem' }}>Bag Details</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxHeight: '240px', overflowY: 'auto', paddingRight: '0.5rem', marginBottom: '1.5rem' }}>
                   {cartItems.map((item, idx) => {
+                    if (!item.productId) return null;
                     const finalPrice = item.productId.discount > 0 
                       ? item.productId.price * (1 - item.productId.discount / 100)
                       : item.productId.price;
                     return (
                       <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                        <img src={item.productId.images[0]} alt={item.productId.name} style={{ width: '40px', height: '50px', objectFit: 'cover' }} />
+                        <img src={getImageUrl(item.productId?.images?.[0])} alt={item.productId?.name} style={{ width: '40px', height: '50px', objectFit: 'cover' }} />
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '170px' }}>{item.productId.name}</div>
                           <div style={{ fontSize: '0.7rem', color: 'var(--color-secondary)' }}>SIZE: {item.size} • QTY: {item.quantity}</div>

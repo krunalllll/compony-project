@@ -32,7 +32,7 @@ export const checkAuthStatus = createAsyncThunk('auth/check', async (_, { reject
   try {
     const response = await api.get('/auth/me');
     return response.data;
-  } catch (error) {
+  } catch {
     return rejectWithValue('No active session');
   }
 });

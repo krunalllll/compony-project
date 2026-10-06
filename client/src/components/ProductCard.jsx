@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Eye, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { addToCartAsync } from '../redux/cartSlice';
 import WishlistButton from './WishlistButton';
 import QuickViewModal from './QuickViewModal';
@@ -43,7 +43,6 @@ const getColorHex = (name) => {
 
 const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { addToast } = useToast();
   const { formatPrice } = useCurrency();
 
@@ -67,7 +66,6 @@ const ProductCard = ({ product }) => {
   // Image rotation on hover (desktop only)
   useEffect(() => {
     if (!hovered || isMobile || !product.images || product.images.length <= 1) {
-      setCurrentImgIndex(0);
       return;
     }
 
@@ -150,7 +148,10 @@ const ProductCard = ({ product }) => {
         }}
         className="glow-hover product-card-hover-container"
         onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseLeave={() => {
+          setHovered(false);
+          setCurrentImgIndex(0);
+        }}
       >
         {/* Media view container */}
         <Link to={`/products/${product._id}`} style={{ display: 'block', position: 'relative', overflow: 'hidden', aspectRatio: '4/5' }}>
@@ -398,7 +399,7 @@ const ProductCard = ({ product }) => {
                     height: '12px',
                     borderRadius: '50%',
                     backgroundColor: getColorHex(c),
-                    border: activeColor === c ? '2px solid #FFF' : '1px solid rgba(255,255,255,0.2)',
+                    border: activeColor === c ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
                     boxShadow: activeColor === c ? '0 0 4px var(--color-accent)' : 'none',
                     cursor: 'pointer',
                     transition: 'transform 0.15s',
@@ -450,12 +451,12 @@ const ProductCard = ({ product }) => {
             transform: translateY(0);
           }
           .quick-view-btn-card:hover {
-            background-color: #ffffff !important;
-            color: #000000 !important;
+            background-color: var(--color-surface-hover) !important;
+            color: var(--color-primary) !important;
+            border-color: var(--color-primary) !important;
           }
           .quick-add-btn-card:hover {
-            background-color: var(--color-accent) !important;
-            color: #ffffff !important;
+            opacity: 0.9;
           }
           .product-card-title-link:hover {
             color: var(--color-accent) !important;

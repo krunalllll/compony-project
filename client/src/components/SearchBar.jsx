@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, History, CornerDownLeft, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
+import { Search, X, History, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
@@ -13,7 +13,14 @@ const POPULAR_SEARCHES = ['Oversized Hoodie', 'Paratrooper Cargo', 'Retro Runner
 const SearchBar = ({ isOpen, onClose }) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
-  const [recentSearches, setRecentSearches] = useState([]);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      const saved = localStorage.getItem('recentSearches');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
@@ -24,19 +31,11 @@ const SearchBar = ({ isOpen, onClose }) => {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('recentSearches');
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
-    }
-  }, []);
-
-  useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
-      setSelectedIndex(-1);
     }
     return () => {
       document.body.style.overflow = '';
@@ -45,27 +44,25 @@ const SearchBar = ({ isOpen, onClose }) => {
 
   // Debounced search suggestions
   useEffect(() => {
-    if (query.trim().length > 1) {
-      setLoading(true);
-      const timer = setTimeout(async () => {
-        try {
-          const response = await api.get(`/products/search?q=${encodeURIComponent(query)}`);
-          setSuggestions(response.data || []);
-          setSelectedIndex(-1);
-        } catch (error) {
-          console.error('Error fetching suggestions:', error);
-          setSuggestions([]);
-        } finally {
-          setLoading(false);
-        }
-      }, 250);
-
-      return () => clearTimeout(timer);
-    } else {
-      setSuggestions([]);
-      setLoading(false);
-      setSelectedIndex(-1);
+    if (query.trim().length <= 1) {
+      return;
     }
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const response = await api.get(`/products/search?q=${encodeURIComponent(query)}`);
+        setSuggestions(response.data || []);
+        setSelectedIndex(-1);
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
   }, [query]);
 
   if (!isOpen) return null;
@@ -268,7 +265,7 @@ const SearchBar = ({ isOpen, onClose }) => {
                           </div>
 
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '0.88rem', fontWeight: 800, textTransform: 'uppercase', color: '#FFF' }}>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)' }}>
                               {item.name}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--color-secondary)', marginTop: '2px', fontWeight: 600 }}>
@@ -280,9 +277,9 @@ const SearchBar = ({ isOpen, onClose }) => {
                             onClick={(e) => handleQuickAdd(e, item)}
                             style={{
                               padding: '0.45rem 0.85rem',
-                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                              color: '#FFF',
-                              border: '1px solid rgba(255, 255, 255, 0.2)',
+                              backgroundColor: 'var(--color-surface)',
+                              color: 'var(--color-primary)',
+                              border: '1px solid var(--color-border)',
                               fontSize: '0.68rem',
                               fontWeight: 800,
                               textTransform: 'uppercase',
@@ -330,7 +327,7 @@ const SearchBar = ({ isOpen, onClose }) => {
                           padding: '0.5rem 1rem',
                           backgroundColor: 'var(--color-bg-alt)',
                           border: '1px solid var(--color-border)',
-                          color: '#FFF',
+                          color: 'var(--color-primary)',
                           fontSize: '0.75rem',
                           fontWeight: 700,
                           textTransform: 'uppercase',
@@ -344,7 +341,7 @@ const SearchBar = ({ isOpen, onClose }) => {
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.borderColor = 'var(--color-border)';
-                          e.currentTarget.style.color = '#FFF';
+                          e.currentTarget.style.color = 'var(--color-primary)';
                         }}
                       >
                         {term}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Ruler, Sparkles, Check } from 'lucide-react';
 
-const SizeGuideModal = ({ isOpen, onClose, category = 'Men', currentSizes = [] }) => {
+const SizeGuideModal = ({ isOpen, onClose, _category = 'Men', _currentSizes = [] }) => {
   const [unit, setUnit] = useState('cm'); // 'cm' or 'in'
   const [activeTab, setActiveTab] = useState('chart'); // 'chart' or 'calculator'
   
@@ -32,7 +32,7 @@ const SizeGuideModal = ({ isOpen, onClose, category = 'Men', currentSizes = [] }
   // Smart size calculator logic
   const calculateRecommendedSize = () => {
     let bmi = weight / ((height / 100) * (height / 100));
-    let base = 'M';
+    let base;
     if (bmi < 20) {
       base = height > 180 ? 'M' : 'S';
     } else if (bmi < 24) {
@@ -216,7 +216,7 @@ const SizeGuideModal = ({ isOpen, onClose, category = 'Men', currentSizes = [] }
               </table>
 
               <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'var(--color-surface)', fontSize: '0.75rem', color: 'var(--color-secondary)', lineHeight: 1.5 }}>
-                <strong style={{ color: '#fff' }}>Fit Tip:</strong> Our silhouettes are designed boxy and relaxed with dropped shoulders. For an oversized aesthetic, take your normal size. For a standard trim fit, size down once.
+                <strong style={{ color: 'var(--color-primary)' }}>Fit Tip:</strong> Our silhouettes are designed boxy and relaxed with dropped shoulders. For an oversized aesthetic, take your normal size. For a standard trim fit, size down once.
               </div>
             </div>
           )}
@@ -274,7 +274,7 @@ const SizeGuideModal = ({ isOpen, onClose, category = 'Men', currentSizes = [] }
                         border: '1px solid',
                         borderColor: fitPreference === style.id ? 'var(--color-accent)' : 'var(--color-border)',
                         backgroundColor: fitPreference === style.id ? 'rgba(255, 59, 48, 0.1)' : 'transparent',
-                        color: fitPreference === style.id ? '#FFF' : 'var(--color-secondary)',
+                        color: fitPreference === style.id ? 'var(--color-accent)' : 'var(--color-secondary)',
                         transition: '0.2s',
                       }}
                     >
@@ -316,7 +316,7 @@ const SizeGuideModal = ({ isOpen, onClose, category = 'Men', currentSizes = [] }
                   <div style={{ fontSize: '0.7rem', color: 'var(--color-gold)', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                     RECOMMENDED SIZE
                   </div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#FFF', marginTop: '0.2rem' }}>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-primary)', marginTop: '0.2rem' }}>
                     SIZE {recommended} — {fitPreference.toUpperCase()} FIT
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-secondary)', marginTop: '0.25rem' }}>
